@@ -1,0 +1,999 @@
+./server.js:4:import dotenv from "dotenv";
+./server.js:7:import express from "express";
+./server.js:8:import path from "path";
+./server.js:9:import fs from "fs";
+./server.js:10:import cors from "cors";
+./server.js:11:import helmet from "helmet";
+./server.js:12:import compression from "compression";
+./server.js:13:import morgan from "morgan";
+./server.js:14:import mongoose from "mongoose";
+./server.js:15:import { fileURLToPath } from "url";
+./node_modules/safer-buffer/Readme.md:63:const Buffer = require('safe-buffer').Buffer
+./node_modules/bson/lib/bson.node.mjs:1:import { randomBytes } from 'crypto';
+./node_modules/bson/README.md:65:import { BSON, EJSON, ObjectId } from 'bson';
+./node_modules/bson/README.md:145:const { EJSON } = require('bson');
+./node_modules/bson/README.md:175:const { EJSON } = require('bson');
+./node_modules/bson/README.md:176:const Int32 = require('mongodb').Int32;
+./node_modules/bson/README.md:249:import { BSON, EJSON } from 'bson';
+./node_modules/bson/README.md:269:const BSON = require('bson');
+./node_modules/mquery/lib/mquery.js:7:const assert = require('assert');
+./node_modules/mquery/lib/mquery.js:8:const util = require('util');
+./node_modules/mquery/lib/mquery.js:10:const debug = require('debug')('mquery');
+./node_modules/mquery/README.md:24:const mongo = require('mongodb');
+./node_modules/undici-types/diagnostics-channel.d.ts:1:import { Socket } from "net";
+./node_modules/undici-types/diagnostics-channel.d.ts:2:import { URL } from "url";
+./node_modules/undici-types/file.d.ts:4:import { Blob } from 'buffer'
+./node_modules/undici-types/agent.d.ts:1:import { URL } from 'url'
+./node_modules/undici-types/client.d.ts:1:import { URL } from 'url'
+./node_modules/undici-types/client.d.ts:2:import { TlsOptions } from 'tls'
+./node_modules/undici-types/api.d.ts:1:import { URL, UrlObject } from 'url'
+./node_modules/undici-types/api.d.ts:2:import { Duplex } from 'stream'
+./node_modules/undici-types/dispatcher.d.ts:1:import { URL } from 'url'
+./node_modules/undici-types/dispatcher.d.ts:2:import { Duplex, Readable, Writable } from 'stream'
+./node_modules/undici-types/dispatcher.d.ts:3:import { EventEmitter } from 'events'
+./node_modules/undici-types/dispatcher.d.ts:4:import { Blob } from 'buffer'
+./node_modules/undici-types/pool.d.ts:3:import { URL } from 'url'
+./node_modules/undici-types/filereader.d.ts:3:import { Blob } from 'buffer'
+./node_modules/undici-types/fetch.d.ts:5:import { Blob } from 'buffer'
+./node_modules/undici-types/fetch.d.ts:6:import { URL, URLSearchParams } from 'url'
+./node_modules/undici-types/fetch.d.ts:7:import { ReadableStream } from 'stream/web'
+./node_modules/undici-types/balanced-pool.d.ts:3:import { URL } from 'url'
+./node_modules/undici-types/readable.d.ts:1:import { Readable } from "stream";
+./node_modules/undici-types/readable.d.ts:2:import { Blob } from 'buffer'
+./node_modules/undici-types/connector.d.ts:1:import { TLSSocket, ConnectionOptions } from 'tls'
+./node_modules/undici-types/connector.d.ts:2:import { IpcNetConnectOpts, Socket, TcpNetConnectOpts } from 'net'
+./node_modules/undici-types/websocket.d.ts:3:import type { Blob } from 'buffer'
+./node_modules/undici-types/websocket.d.ts:4:import type { MessagePort } from 'worker_threads'
+./node_modules/finalhandler/node_modules/debug/README.md:134:const createDebug = require('debug')
+./node_modules/form-data-encoder/readme.md:38:import {Readable} from "stream"
+./node_modules/form-data-encoder/readme.md:40:import {FormData, File} from "formdata-node"
+./node_modules/form-data-encoder/readme.md:41:import {FormDataEncoder} from "form-data-encoder"
+./node_modules/form-data-encoder/readme.md:43:import fetch from "node-fetch"
+./node_modules/form-data-encoder/readme.md:73:import {Readable} from "stream"
+./node_modules/form-data-encoder/readme.md:75:import {FormDataEncoder} from "form-data-encoder"
+./node_modules/form-data-encoder/readme.md:76:import {FormData} from "formdata-polyfill/esm-min.js"
+./node_modules/form-data-encoder/readme.md:77:import {File} from "fetch-blob" // v3
+./node_modules/form-data-encoder/readme.md:98:import {Readable} from "stream"
+./node_modules/form-data-encoder/readme.md:100:import {FormDataEncoder} from "form-data-encoder"
+./node_modules/form-data-encoder/readme.md:102:import {FormData, File, Blob, fileFromPath} from "formdata-node"
+./node_modules/form-data-encoder/readme.md:104:import fetch from "node-fetch"
+./node_modules/form-data-encoder/readme.md:133:import {FormData} from "formdata-polyfill/esm-min.js"
+./node_modules/form-data-encoder/readme.md:134:import {blobFrom} from "fetch-blob/from.js"
+./node_modules/form-data-encoder/readme.md:135:import {FormDataEncoder} from "form-data-encoder"
+./node_modules/form-data-encoder/readme.md:137:import Blob from "fetch-blob"
+./node_modules/form-data-encoder/readme.md:138:import fetch from "node-fetch"
+./node_modules/form-data-encoder/readme.md:168:import {Readable} from "stream"
+./node_modules/form-data-encoder/readme.md:170:import {FormDataEncoder} from "form-data-encoder"
+./node_modules/form-data-encoder/readme.md:171:import {FormData} from "formdata-polyfill/esm-min.js"
+./node_modules/form-data-encoder/readme.md:172:import {blobFrom} from "fetch-blob/from.js"
+./node_modules/form-data-encoder/readme.md:174:import Blob from "fetch-blob"
+./node_modules/form-data-encoder/readme.md:175:import fetch from "node-fetch"
+./node_modules/form-data-encoder/readme.md:223:import {ReadableStream} from "web-streams-polyfill/ponyfill/es2018"
+./node_modules/form-data-encoder/readme.md:225:import {FormDataEncoder} from "form-data-encoder"
+./node_modules/form-data-encoder/readme.md:226:import {FormData} from "formdata-node"
+./node_modules/form-data-encoder/readme.md:228:import fetch from "node-fetch"
+./node_modules/form-data-encoder/readme.md:265:import {FormDataEncoder} from "form-data-encoder"
+./node_modules/form-data-encoder/readme.md:266:import {FormData} from "formdata-node"
+./node_modules/form-data-encoder/readme.md:268:import fetch from "node-fetch"
+./node_modules/form-data-encoder/readme.md:288:import {FormData} from "formdata-node" // Or any other spec-compatible implementation
+./node_modules/form-data-encoder/readme.md:290:import fetch from "node-fetch"
+./node_modules/morgan/node_modules/debug/README.md:134:const createDebug = require('debug')
+./node_modules/formdata-node/lib/esm/deprecateConstructorEntries.js:1:import { deprecate } from "util";
+./node_modules/formdata-node/lib/esm/Blob.js:14:import { ReadableStream } from "web-streams-polyfill";
+./node_modules/formdata-node/lib/esm/FormData.js:7:import { inspect } from "util";
+./node_modules/formdata-node/lib/esm/fileFromPath.js:13:import { statSync, createReadStream, promises as fs } from "fs";
+./node_modules/formdata-node/lib/esm/fileFromPath.js:14:import { basename } from "path";
+./node_modules/formdata-node/lib/esm/fileFromPath.js:15:import DOMException from "node-domexception";
+./node_modules/formdata-node/lib/cjs/deprecateConstructorEntries.js:4:const util_1 = require("util");
+./node_modules/formdata-node/lib/cjs/Blob.js:17:const web_streams_polyfill_1 = require("web-streams-polyfill");
+./node_modules/formdata-node/lib/cjs/FormData.js:10:const util_1 = require("util");
+./node_modules/formdata-node/lib/cjs/fileFromPath.js:29:const fs_1 = require("fs");
+./node_modules/formdata-node/lib/cjs/fileFromPath.js:30:const path_1 = require("path");
+./node_modules/formdata-node/@type/FormData.d.ts:2:import { inspect } from "util";
+./node_modules/formdata-node/@type/Blob.d.ts:2:import { ReadableStream } from "web-streams-polyfill";
+./node_modules/formdata-node/readme.md:47:import {FormData} from "formdata-node"
+./node_modules/formdata-node/readme.md:50:import got from "got"
+./node_modules/formdata-node/readme.md:64:import {Readable} from "stream"
+./node_modules/formdata-node/readme.md:66:import {FormDataEncoder} from "form-data-encoder"
+./node_modules/formdata-node/readme.md:67:import {FormData} from "formdata-node"
+./node_modules/formdata-node/readme.md:70:import fetch from "node-fetch"
+./node_modules/formdata-node/readme.md:90:import {FormData, File} from "formdata-node" // You can use `File` from fetch-blob >= 3.x
+./node_modules/formdata-node/readme.md:92:import fetch from "node-fetch"
+./node_modules/formdata-node/readme.md:105:import {FormData, Blob} from "formdata-node" // You can use `Blob` from fetch-blob
+./node_modules/formdata-node/readme.md:129:import {fileFromPath} from "formdata-node/file-from-path"
+./node_modules/formdata-node/readme.md:130:import {FormData} from "formdata-node"
+./node_modules/formdata-node/readme.md:132:import fetch from "node-fetch"
+./node_modules/formdata-node/readme.md:144:import {Readable} from "stream"
+./node_modules/formdata-node/readme.md:146:import {FormData} from "formdata-node"
+./node_modules/formdata-node/readme.md:184:import {Readable} from "stream"
+./node_modules/formdata-node/readme.md:186:import {Encoder} from "form-data-encoder"
+./node_modules/formdata-node/readme.md:187:import {FormData} from "formdata-node"
+./node_modules/jwa/README.md:101:const jwa = require('jwa');
+./node_modules/jwa/README.md:114:const fs = require('fs');
+./node_modules/jwa/README.md:115:const jwa = require('jwa');
+./node_modules/call-bind-apply-helpers/README.md:26:const assert = require('assert');
+./node_modules/call-bind-apply-helpers/README.md:27:const callBindBasic = require('call-bind-apply-helpers');
+./node_modules/debug/src/node.js:5:const tty = require('tty');
+./node_modules/debug/src/node.js:6:const util = require('util');
+./node_modules/debug/src/node.js:32:	const supportsColor = require('supports-color');
+./node_modules/debug/README.md:203:const createDebug = require('debug')
+./node_modules/debug/README.md:277:const log = require('debug')('auth');
+./node_modules/debug/README.md:347:const debug = require('debug')('http');
+./node_modules/bcryptjs/bin/bcrypt:3:import path from "node:path";
+./node_modules/bcryptjs/README.md:30:import bcrypt from "bcryptjs";
+./node_modules/bcryptjs/index.js:32:import nodeCrypto from "crypto";
+./node_modules/abort-controller/dist/abort-controller.d.ts:1:import { EventTarget } from "event-target-shim"
+./node_modules/abort-controller/dist/abort-controller.mjs:5:import { EventTarget, defineEventAttribute } from 'event-target-shim';
+./node_modules/abort-controller/README.md:12:import AbortController from "abort-controller"
+./node_modules/abort-controller/README.md:45:import AbortController from "abort-controller"
+./node_modules/abort-controller/README.md:47:const AbortController = require("abort-controller")
+./node_modules/@mongodb-js/saslprep/dist/memory-code-points.d.ts:1:import bitfield from 'sparse-bitfield';
+./node_modules/@mongodb-js/saslprep/dist/code-points-data.js:3:const zlib_1 = require("zlib");
+./node_modules/@mongodb-js/saslprep/dist/generate-code-points.js:39:const zlib_1 = require("zlib");
+./node_modules/@mongodb-js/saslprep/dist/generate-code-points.js:42:const fs_1 = require("fs");
+./node_modules/@mongodb-js/saslprep/readme.md:11:const saslprep = require('@mongodb-js/saslprep');
+./node_modules/side-channel-weakmap/README.md:24:const assert = require('assert');
+./node_modules/side-channel-weakmap/README.md:25:const getSideChannelList = require('side-channel-weakmap');
+./node_modules/mongodb-connection-string-url/node_modules/webidl-conversions/README.md:9:const conversions = require("webidl-conversions");
+./node_modules/mongodb-connection-string-url/node_modules/tr46/index.js:3:const punycode = require("punycode/");
+./node_modules/mongodb-connection-string-url/node_modules/whatwg-url/lib/VoidFunction.js:3:const conversions = require("webidl-conversions");
+./node_modules/mongodb-connection-string-url/node_modules/whatwg-url/lib/url-state-machine.js:2:const tr46 = require("tr46");
+./node_modules/mongodb-connection-string-url/node_modules/whatwg-url/lib/URLSearchParams.js:3:const conversions = require("webidl-conversions");
+./node_modules/mongodb-connection-string-url/node_modules/whatwg-url/lib/URL.js:3:const conversions = require("webidl-conversions");
+./node_modules/mongodb-connection-string-url/node_modules/whatwg-url/lib/Function.js:3:const conversions = require("webidl-conversions");
+./node_modules/mongodb-connection-string-url/lib/index.js:4:const whatwg_url_1 = require("whatwg-url");
+./node_modules/mongodb-connection-string-url/lib/index.d.ts:1:import { URL } from 'whatwg-url';
+./node_modules/mongodb-connection-string-url/README.md:6:import ConnectionString from 'mongodb-connection-string-url';
+./node_modules/es-define-property/README.md:15:const assert = require('assert');
+./node_modules/es-define-property/README.md:17:const $defineProperty = require('es-define-property');
+./node_modules/node-addon-api/index.js:1:const path = require('path');
+./node_modules/node-addon-api/tools/check-napi.js:5:const fs = require('fs');
+./node_modules/node-addon-api/tools/check-napi.js:6:const path = require('path');
+./node_modules/node-addon-api/tools/check-napi.js:11:  const child = require('child_process').spawn(command, argv, {
+./node_modules/node-addon-api/tools/clang-format.js:3:const spawn = require('child_process').spawnSync;
+./node_modules/node-addon-api/tools/clang-format.js:4:const path = require('path');
+./node_modules/node-addon-api/tools/conversion.js:5:const fs = require('fs');
+./node_modules/node-addon-api/tools/conversion.js:6:const path = require('path');
+./node_modules/@napi-rs/canvas/js-binding.js:6:const { readFileSync } = require('fs')
+./node_modules/@napi-rs/canvas/README.md:53:const { promises } = require('node:fs')
+./node_modules/@napi-rs/canvas/README.md:54:const { join } = require('node:path')
+./node_modules/@napi-rs/canvas/README.md:55:const { createCanvas, loadImage } = require('@napi-rs/canvas')
+./node_modules/@napi-rs/canvas/README.md:101:const { writeFileSync } = require('fs')
+./node_modules/@napi-rs/canvas/README.md:102:const { join } = require('path')
+./node_modules/@napi-rs/canvas/README.md:104:const { createCanvas, GlobalFonts } = require('@napi-rs/canvas')
+./node_modules/@napi-rs/canvas/index.js:1:const { platform, homedir } = require('os')
+./node_modules/@napi-rs/canvas/index.js:2:const { join } = require('path')
+./node_modules/@napi-rs/canvas/load-image.js:1:const fs = require('fs')
+./node_modules/@napi-rs/canvas/load-image.js:2:const { Readable } = require('stream')
+./node_modules/@napi-rs/canvas/load-image.js:3:const { URL } = require('url')
+./node_modules/@napi-rs/canvas/load-image.js:83:  const lib = isHttps ? (!https ? (https = require('https')) : https) : !http ? (http = require('http')) : http
+./node_modules/@napi-rs/canvas/geometry.js:1:const { inspect } = require('util')
+./node_modules/@napi-rs/canvas/index.d.ts:1:import { ReadableStream } from 'node:stream/web'
+./node_modules/node-domexception/README.md:11:import DOMException from 'node-domexception'
+./node_modules/node-domexception/README.md:12:import { MessageChannel } from 'worker_threads'
+./node_modules/node-domexception/index.js:5:    const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527213910.js:5:    const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527203947.js:1:const { MessageChannel } = require('worker_threads')
+./node_modules/node-domexception/.history/README_20210527214408.md:14:import DOMException from 'node-domexception'
+./node_modules/node-domexception/.history/README_20210527214408.md:15:import { MessageChannel } from 'worker_threads'
+./node_modules/node-domexception/.history/index_20210527213843.js:5:    const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527204259.js:2:  const { MessageChannel } = require('worker_threads')
+./node_modules/node-domexception/.history/index_20210527212746.js:4:  const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527213822.js:4:  const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527212722.js:4:  const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527212900.js:4:  const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/README_20210527214323.md:14:import DOMException from 'node-domexception'
+./node_modules/node-domexception/.history/README_20210527214323.md:15:import { MessageChannel } from 'worker_threads'
+./node_modules/node-domexception/.history/index_20210527204833.js:4:  const { MessageChannel } = require('worker_threads')
+./node_modules/node-domexception/.history/index_20210527214654.js:5:    const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527214654.js:19:const  { MessageChannel } = require('worker_threads')
+./node_modules/node-domexception/.history/index_20210527214034.js:5:    const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/README_20210527213345.md:12:import DOMException from 'node-domexception'
+./node_modules/node-domexception/.history/README_20210527213345.md:13:import { MessageChannel } from 'worker_threads'
+./node_modules/node-domexception/.history/index_20210527214643.js:5:    const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527214643.js:19:const  { MessageChannel } = require('worker_threads')
+./node_modules/node-domexception/.history/index_20210527213022.js:4:  const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527204418.js:2:  const { MessageChannel } = require('worker_threads')
+./node_modules/node-domexception/.history/README_20210527212714.md:12:import DOMException from 'node-domexception'
+./node_modules/node-domexception/.history/README_20210527213411.md:12:import DOMException from 'node-domexception'
+./node_modules/node-domexception/.history/README_20210527213411.md:13:import { MessageChannel } from 'worker_threads'
+./node_modules/node-domexception/.history/index_20210527214700.js:5:    const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527211248.js:4:  const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/index_20210527204756.js:4:  const { MessageChannel } = require('worker_threads')
+./node_modules/node-domexception/.history/index_20210527212731.js:4:  const { MessageChannel } = require('worker_threads'),
+./node_modules/node-domexception/.history/README_20210527213803.md:12:import DOMException from 'node-domexception'
+./node_modules/node-domexception/.history/README_20210527213803.md:13:import { MessageChannel } from 'worker_threads'
+./node_modules/node-domexception/.history/index_20210527213852.js:5:    const { MessageChannel } = require('worker_threads'),
+./node_modules/mongodb/mongodb.d.ts:1:import type { DeserializeOptions } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:2:import type { ObjectIdLike } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:3:import type { SerializeOptions } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:4:import { Binary } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:5:import { BSON } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:6:import { BSONRegExp } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:7:import { BSONSymbol } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:8:import { BSONType } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:9:import { Code } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:10:import { DBRef } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:11:import { Decimal128 } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:12:import { deserialize } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:13:import { Document } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:14:import { Double } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:15:import { Int32 } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:16:import { Long } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:17:import { MaxKey } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:18:import { MinKey } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:19:import { ObjectId } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:20:import { serialize } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:21:import { Timestamp } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:22:import { UUID } from 'bson';
+./node_modules/mongodb/mongodb.d.ts:23:import type { SrvRecord } from 'dns';
+./node_modules/mongodb/mongodb.d.ts:24:import { EventEmitter } from 'events';
+./node_modules/mongodb/mongodb.d.ts:25:import type { Socket } from 'net';
+./node_modules/mongodb/mongodb.d.ts:26:import type { TcpNetConnectOpts } from 'net';
+./node_modules/mongodb/mongodb.d.ts:27:import { Readable } from 'stream';
+./node_modules/mongodb/mongodb.d.ts:28:import { Writable } from 'stream';
+./node_modules/mongodb/mongodb.d.ts:29:import type { ConnectionOptions as ConnectionOptions_2 } from 'tls';
+./node_modules/mongodb/mongodb.d.ts:30:import type { TLSSocket } from 'tls';
+./node_modules/mongodb/mongodb.d.ts:31:import type { TLSSocketOptions } from 'tls';
+./node_modules/mongodb/src/sdam/srv_polling.ts:1:import * as dns from 'dns';
+./node_modules/mongodb/src/sdam/srv_polling.ts:2:import { clearTimeout, setTimeout } from 'timers';
+./node_modules/mongodb/src/sdam/monitor.ts:1:import { clearTimeout, setTimeout } from 'timers';
+./node_modules/mongodb/src/bson.ts:2:import { BSON, type DeserializeOptions, type SerializeOptions } from 'bson';
+./node_modules/mongodb/src/cursor/abstract_cursor.ts:1:import { Readable, Transform } from 'stream';
+./node_modules/mongodb/src/mongo_types.ts:1:import { EventEmitter } from 'events';
+./node_modules/mongodb/src/timeout.ts:1:import { clearTimeout, setTimeout } from 'timers';
+./node_modules/mongodb/src/cmap/auth/mongodb_oidc/token_machine_workflow.ts:1:import * as fs from 'fs';
+./node_modules/mongodb/src/cmap/auth/mongodb_oidc/k8s_machine_workflow.ts:1:import { readFile } from 'fs/promises';
+./node_modules/mongodb/src/cmap/auth/mongodb_oidc/callback_workflow.ts:1:import { setTimeout } from 'timers/promises';
+./node_modules/mongodb/src/cmap/auth/gssapi.ts:1:import * as dns from 'dns';
+./node_modules/mongodb/src/cmap/auth/scram.ts:1:import { saslprep } from '@mongodb-js/saslprep';
+./node_modules/mongodb/src/cmap/auth/scram.ts:2:import * as crypto from 'crypto';
+./node_modules/mongodb/src/cmap/connect.ts:1:import type { Socket, SocketConnectOpts } from 'net';
+./node_modules/mongodb/src/cmap/connect.ts:2:import * as net from 'net';
+./node_modules/mongodb/src/cmap/connect.ts:3:import type { ConnectionOptions as TLSConnectionOpts, TLSSocket } from 'tls';
+./node_modules/mongodb/src/cmap/connect.ts:4:import * as tls from 'tls';
+./node_modules/mongodb/src/cmap/connection.ts:1:import { type Readable, Transform, type TransformCallback } from 'stream';
+./node_modules/mongodb/src/cmap/connection.ts:2:import { clearTimeout, setTimeout } from 'timers';
+./node_modules/mongodb/src/cmap/handshake/client_metadata.ts:1:import * as os from 'os';
+./node_modules/mongodb/src/cmap/handshake/client_metadata.ts:2:import * as process from 'process';
+./node_modules/mongodb/src/cmap/wire_protocol/compression.ts:1:import { promisify } from 'util';
+./node_modules/mongodb/src/cmap/wire_protocol/compression.ts:2:import * as zlib from 'zlib';
+./node_modules/mongodb/src/cmap/wire_protocol/on_data.ts:1:import { type EventEmitter } from 'events';
+./node_modules/mongodb/src/cmap/connection_pool.ts:1:import { clearTimeout, setTimeout } from 'timers';
+./node_modules/mongodb/src/change_stream.ts:1:import type { Readable } from 'stream';
+./node_modules/mongodb/src/mongo_client.ts:1:import { promises as fs } from 'fs';
+./node_modules/mongodb/src/mongo_client.ts:2:import type { TcpNetConnectOpts } from 'net';
+./node_modules/mongodb/src/mongo_client.ts:3:import type { ConnectionOptions as TLSConnectionOptions, TLSSocketOptions } from 'tls';
+./node_modules/mongodb/src/deps.ts:106:    const credentialProvider = require('@aws-sdk/credential-providers');
+./node_modules/mongodb/src/deps.ts:128:    const credentialProvider = require('gcp-metadata');
+./node_modules/mongodb/src/deps.ts:160:    const value = require('snappy');
+./node_modules/mongodb/src/deps.ts:195:    const value = require('socks');
+./node_modules/mongodb/src/client-side-encryption/auto_encrypter.ts:6:import * as net from 'net';
+./node_modules/mongodb/src/client-side-encryption/mongocryptd_manager.ts:1:import type { ChildProcess } from 'child_process';
+./node_modules/mongodb/src/client-side-encryption/mongocryptd_manager.ts:53:    const { spawn } = require('child_process') as typeof import('child_process');
+./node_modules/mongodb/src/client-side-encryption/state_machine.ts:1:import * as fs from 'fs/promises';
+./node_modules/mongodb/src/client-side-encryption/state_machine.ts:2:import { type MongoCryptContext, type MongoCryptKMSRequest } from 'mongodb-client-encryption';
+./node_modules/mongodb/src/client-side-encryption/state_machine.ts:3:import * as net from 'net';
+./node_modules/mongodb/src/client-side-encryption/state_machine.ts:4:import * as tls from 'tls';
+./node_modules/mongodb/src/client-side-encryption/crypto_callbacks.ts:1:import * as crypto from 'crypto';
+./node_modules/mongodb/src/connection_string.ts:1:import * as dns from 'dns';
+./node_modules/mongodb/src/connection_string.ts:2:import ConnectionString from 'mongodb-connection-string-url';
+./node_modules/mongodb/src/connection_string.ts:3:import { URLSearchParams } from 'url';
+./node_modules/mongodb/src/utils.ts:1:import * as crypto from 'crypto';
+./node_modules/mongodb/src/utils.ts:2:import type { SrvRecord } from 'dns';
+./node_modules/mongodb/src/utils.ts:3:import { type EventEmitter } from 'events';
+./node_modules/mongodb/src/utils.ts:4:import { promises as fs } from 'fs';
+./node_modules/mongodb/src/utils.ts:5:import * as http from 'http';
+./node_modules/mongodb/src/utils.ts:6:import { clearTimeout, setTimeout } from 'timers';
+./node_modules/mongodb/src/utils.ts:7:import * as url from 'url';
+./node_modules/mongodb/src/utils.ts:8:import { URL } from 'url';
+./node_modules/mongodb/src/utils.ts:9:import { promisify } from 'util';
+./node_modules/mongodb/src/mongo_logger.ts:1:import { inspect, promisify } from 'util';
+./node_modules/mongodb/src/gridfs/download.ts:1:import { Readable } from 'stream';
+./node_modules/mongodb/src/gridfs/upload.ts:1:import { Writable } from 'stream';
+./node_modules/mongodb/lib/sdam/srv_polling.js:4:const dns = require("dns");
+./node_modules/mongodb/lib/sdam/srv_polling.js:5:const timers_1 = require("timers");
+./node_modules/mongodb/lib/sdam/monitor.js:4:const timers_1 = require("timers");
+./node_modules/mongodb/lib/cursor/abstract_cursor.js:4:const stream_1 = require("stream");
+./node_modules/mongodb/lib/cmap/connection_pool.js:4:const timers_1 = require("timers");
+./node_modules/mongodb/lib/cmap/auth/gssapi.js:6:const dns = require("dns");
+./node_modules/mongodb/lib/cmap/auth/mongodb_oidc/k8s_machine_workflow.js:4:const promises_1 = require("fs/promises");
+./node_modules/mongodb/lib/cmap/auth/mongodb_oidc/callback_workflow.js:4:const promises_1 = require("timers/promises");
+./node_modules/mongodb/lib/cmap/auth/mongodb_oidc/token_machine_workflow.js:4:const fs = require("fs");
+./node_modules/mongodb/lib/cmap/auth/scram.js:4:const saslprep_1 = require("@mongodb-js/saslprep");
+./node_modules/mongodb/lib/cmap/auth/scram.js:5:const crypto = require("crypto");
+./node_modules/mongodb/lib/cmap/connection.js:5:const stream_1 = require("stream");
+./node_modules/mongodb/lib/cmap/connection.js:6:const timers_1 = require("timers");
+./node_modules/mongodb/lib/cmap/connect.js:9:const net = require("net");
+./node_modules/mongodb/lib/cmap/connect.js:10:const tls = require("tls");
+./node_modules/mongodb/lib/cmap/handshake/client_metadata.js:8:const os = require("os");
+./node_modules/mongodb/lib/cmap/handshake/client_metadata.js:9:const process = require("process");
+./node_modules/mongodb/lib/cmap/wire_protocol/compression.js:8:const util_1 = require("util");
+./node_modules/mongodb/lib/cmap/wire_protocol/compression.js:9:const zlib = require("zlib");
+./node_modules/mongodb/lib/bson.js:9:const bson_1 = require("bson");
+./node_modules/mongodb/lib/utils.js:54:const crypto = require("crypto");
+./node_modules/mongodb/lib/utils.js:55:const fs_1 = require("fs");
+./node_modules/mongodb/lib/utils.js:56:const http = require("http");
+./node_modules/mongodb/lib/utils.js:57:const timers_1 = require("timers");
+./node_modules/mongodb/lib/utils.js:58:const url = require("url");
+./node_modules/mongodb/lib/utils.js:59:const url_1 = require("url");
+./node_modules/mongodb/lib/utils.js:60:const util_1 = require("util");
+./node_modules/mongodb/lib/client-side-encryption/mongocryptd_manager.js:38:        const { spawn } = require('child_process');
+./node_modules/mongodb/lib/client-side-encryption/state_machine.js:4:const fs = require("fs/promises");
+./node_modules/mongodb/lib/client-side-encryption/state_machine.js:5:const net = require("net");
+./node_modules/mongodb/lib/client-side-encryption/state_machine.js:6:const tls = require("tls");
+./node_modules/mongodb/lib/client-side-encryption/crypto_callbacks.js:9:const crypto = require("crypto");
+./node_modules/mongodb/lib/client-side-encryption/auto_encrypter.js:5:const net = require("net");
+./node_modules/mongodb/lib/connection_string.js:6:const dns = require("dns");
+./node_modules/mongodb/lib/connection_string.js:7:const mongodb_connection_string_url_1 = require("mongodb-connection-string-url");
+./node_modules/mongodb/lib/connection_string.js:8:const url_1 = require("url");
+./node_modules/mongodb/lib/timeout.js:4:const timers_1 = require("timers");
+./node_modules/mongodb/lib/gridfs/upload.js:4:const stream_1 = require("stream");
+./node_modules/mongodb/lib/gridfs/download.js:4:const stream_1 = require("stream");
+./node_modules/mongodb/lib/beta.d.ts:1:import type { DeserializeOptions } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:2:import type { ObjectIdLike } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:3:import type { SerializeOptions } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:4:import { Binary } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:5:import { BSON } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:6:import { BSONRegExp } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:7:import { BSONSymbol } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:8:import { BSONType } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:9:import { Code } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:10:import { DBRef } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:11:import { Decimal128 } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:12:import { deserialize } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:13:import { Document } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:14:import { Double } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:15:import { Int32 } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:16:import { Long } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:17:import { MaxKey } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:18:import { MinKey } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:19:import { ObjectId } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:20:import { serialize } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:21:import { Timestamp } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:22:import { UUID } from 'bson';
+./node_modules/mongodb/lib/beta.d.ts:23:import type { SrvRecord } from 'dns';
+./node_modules/mongodb/lib/beta.d.ts:24:import { EventEmitter } from 'events';
+./node_modules/mongodb/lib/beta.d.ts:25:import type { Socket } from 'net';
+./node_modules/mongodb/lib/beta.d.ts:26:import type { TcpNetConnectOpts } from 'net';
+./node_modules/mongodb/lib/beta.d.ts:27:import { Readable } from 'stream';
+./node_modules/mongodb/lib/beta.d.ts:28:import { Writable } from 'stream';
+./node_modules/mongodb/lib/beta.d.ts:29:import type { ConnectionOptions as ConnectionOptions_2 } from 'tls';
+./node_modules/mongodb/lib/beta.d.ts:30:import type { TLSSocket } from 'tls';
+./node_modules/mongodb/lib/beta.d.ts:31:import type { TLSSocketOptions } from 'tls';
+./node_modules/mongodb/lib/mongo_logger.js:8:const util_1 = require("util");
+./node_modules/mongodb/lib/deps.js:53:        const credentialProvider = require('@aws-sdk/credential-providers');
+./node_modules/mongodb/lib/deps.js:65:        const credentialProvider = require('gcp-metadata');
+./node_modules/mongodb/lib/deps.js:77:        const value = require('snappy');
+./node_modules/mongodb/lib/deps.js:89:        const value = require('socks');
+./node_modules/mongodb/lib/mongo_client.js:4:const fs_1 = require("fs");
+./node_modules/mongodb/lib/mongo_types.js:4:const events_1 = require("events");
+./node_modules/mongodb/README.md:201:const { MongoClient } = require('mongodb');
+./node_modules/es-errors/README.md:15:const assert = require('assert');
+./node_modules/es-errors/README.md:17:const Base = require('es-errors');
+./node_modules/es-errors/README.md:18:const Eval = require('es-errors/eval');
+./node_modules/es-errors/README.md:19:const Range = require('es-errors/range');
+./node_modules/es-errors/README.md:20:const Ref = require('es-errors/ref');
+./node_modules/es-errors/README.md:21:const Syntax = require('es-errors/syntax');
+./node_modules/es-errors/README.md:22:const Type = require('es-errors/type');
+./node_modules/es-errors/README.md:23:const URI = require('es-errors/uri');
+./node_modules/dunder-proto/README.md:21:const assert = require('assert');
+./node_modules/dunder-proto/README.md:22:const getDunder = require('dunder-proto/get');
+./node_modules/dunder-proto/README.md:23:const setDunder = require('dunder-proto/set');
+./node_modules/mime/src/build.js:5:const fs = require('fs');
+./node_modules/mime/src/build.js:6:const path = require('path');
+./node_modules/mime/src/build.js:7:const mimeScore = require('mime-score');
+./node_modules/webidl-conversions/README.md:8:const conversions = require("webidl-conversions");
+./node_modules/side-channel-list/README.md:24:const assert = require('assert');
+./node_modules/side-channel-list/README.md:25:const getSideChannelList = require('side-channel-list');
+./node_modules/agentkeepalive/lib/agent.js:3:const OriginalAgent = require('http').Agent;
+./node_modules/agentkeepalive/lib/agent.js:4:const ms = require('humanize-ms');
+./node_modules/agentkeepalive/lib/agent.js:5:const debug = require('util').debuglog('agentkeepalive');
+./node_modules/agentkeepalive/lib/https_agent.js:3:const OriginalHttpsAgent = require('https').Agent;
+./node_modules/agentkeepalive/README.md:63:const http = require('http');
+./node_modules/agentkeepalive/README.md:64:const HttpAgent = require('agentkeepalive').HttpAgent;
+./node_modules/agentkeepalive/README.md:125:const https = require('https');
+./node_modules/agentkeepalive/README.md:126:const HttpsAgent = require('agentkeepalive').HttpsAgent;
+./node_modules/agentkeepalive/README.md:164:const http = require('http');
+./node_modules/agentkeepalive/README.md:165:const HttpAgent = require('agentkeepalive').HttpAgent;
+./node_modules/agentkeepalive/index.d.ts:1:import * as http from 'http';
+./node_modules/agentkeepalive/index.d.ts:2:import * as https from 'https';
+./node_modules/agentkeepalive/index.d.ts:3:import * as net from 'net';
+./node_modules/.bin/openai:3:const { spawnSync } = require('child_process');
+./node_modules/.bin/bcrypt:3:import path from "node:path";
+./node_modules/.bin/pdf-parse:3:import { mkdir, readFile, writeFile } from 'node:fs/promises';
+./node_modules/.bin/pdf-parse:4:import { stderr, stdout } from 'node:process';
+./node_modules/.bin/pdf-parse:5:import { PDFParse } from 'pdf-parse';
+./node_modules/.bin/pdf-parse:6:import { getHeader } from 'pdf-parse/node';
+./node_modules/web-streams-polyfill/README.md:55:import { ReadableStream } from "web-streams-polyfill";
+./node_modules/hasown/README.md:15:const assert = require('assert');
+./node_modules/hasown/README.md:16:const hasOwn = require('hasown');
+./node_modules/node-fetch/lib/index.es.js:3:import Stream from 'stream';
+./node_modules/node-fetch/lib/index.es.js:4:import http from 'http';
+./node_modules/node-fetch/lib/index.es.js:5:import Url from 'url';
+./node_modules/node-fetch/lib/index.es.js:6:import whatwgUrl from 'whatwg-url';
+./node_modules/node-fetch/lib/index.es.js:7:import https from 'https';
+./node_modules/node-fetch/lib/index.es.js:8:import zlib from 'zlib';
+./node_modules/node-fetch/lib/index.mjs:1:import Stream from 'stream';
+./node_modules/node-fetch/lib/index.mjs:2:import http from 'http';
+./node_modules/node-fetch/lib/index.mjs:3:import Url from 'url';
+./node_modules/node-fetch/lib/index.mjs:4:import whatwgUrl from 'whatwg-url';
+./node_modules/node-fetch/lib/index.mjs:5:import https from 'https';
+./node_modules/node-fetch/lib/index.mjs:6:import zlib from 'zlib';
+./node_modules/node-fetch/README.md:84:const fetch = require('node-fetch');
+./node_modules/node-fetch/README.md:89:const Bluebird = require('bluebird');
+./node_modules/node-fetch/README.md:141:const { URLSearchParams } = require('url');
+./node_modules/node-fetch/README.md:195:const fetch = require('node-fetch');
+./node_modules/node-fetch/README.md:211:const fetch = require('node-fetch');
+./node_modules/node-fetch/README.md:238:const fileType = require('file-type');
+./node_modules/node-fetch/README.md:272:const { createReadStream } = require('fs');
+./node_modules/node-fetch/README.md:284:const FormData = require('form-data');
+./node_modules/node-fetch/README.md:319:import AbortController from 'abort-controller';
+./node_modules/send/node_modules/debug/README.md:134:const createDebug = require('debug')
+./node_modules/es-object-atoms/README.md:15:const assert = require('assert');
+./node_modules/es-object-atoms/README.md:17:const $Object = require('es-object-atoms');
+./node_modules/es-object-atoms/README.md:18:const isObject = require('es-object-atoms/isObject');
+./node_modules/es-object-atoms/README.md:19:const ToObject = require('es-object-atoms/ToObject');
+./node_modules/es-object-atoms/README.md:20:const RequireObjectCoercible = require('es-object-atoms/RequireObjectCoercible');
+./node_modules/express/node_modules/debug/README.md:134:const createDebug = require('debug')
+./node_modules/express/Readme.md:29:const express = require('express')
+./node_modules/dotenv/README-es.md:63:import * as dotenv from 'dotenv' // vea en https://github.com/motdotla/dotenv#como-uso-dotenv-con-import
+./node_modules/dotenv/README-es.md:66:import express from 'express'
+./node_modules/dotenv/README-es.md:114:const dotenv = require('dotenv')
+./node_modules/dotenv/README-es.md:238:const dotenv = require('dotenv')
+./node_modules/dotenv/README-es.md:253:const dotenv = require('dotenv')
+./node_modules/dotenv/README-es.md:331:const dotenv = require('dotenv')
+./node_modules/dotenv/README-es.md:332:const variableExpansion = require('dotenv-expand')
+./node_modules/dotenv/README-es.md:343:import * as dotenv from 'dotenv' // vea https://github.com/motdotla/dotenv#como-uso-dotenv-con-import
+./node_modules/dotenv/README-es.md:345:import express from 'express'
+./node_modules/dotenv/README-es.md:358:import { Cliente } from 'mejor-servicio-para-notificar-error'
+./node_modules/dotenv/README-es.md:363:import dotenv from 'dotenv'
+./node_modules/dotenv/README-es.md:376:import { Cliente } from 'mejor-servicio-para-notificar-errores'
+./node_modules/dotenv/README-es.md:381:import * as dotenv from 'dotenv'
+./node_modules/dotenv/lib/main.js:1:const fs = require('fs')
+./node_modules/dotenv/lib/main.js:2:const path = require('path')
+./node_modules/dotenv/lib/main.js:3:const os = require('os')
+./node_modules/dotenv/lib/main.js:4:const crypto = require('crypto')
+./node_modules/dotenv/lib/main.d.ts:3:import type { URL } from 'url';
+./node_modules/dotenv/README.md:132:const dotenv = require('dotenv')
+./node_modules/dotenv/README.md:366:const dotenv = require('dotenv')
+./node_modules/dotenv/README.md:381:const dotenv = require('dotenv')
+./node_modules/dotenv/README.md:395:const dotenv = require('dotenv')
+./node_modules/dotenv/README.md:406:const dotenv = require('dotenv')
+./node_modules/dotenv/README.md:503:const dotenv = require('dotenv')
+./node_modules/dotenv/README.md:504:const variableExpansion = require('dotenv-expand')
+./node_modules/dotenv/README.md:516:import express from 'express'
+./node_modules/dotenv/README.md:542:import * as dotenv from 'dotenv'
+./node_modules/dotenv/README.md:578:const path = require('path');
+./node_modules/dotenv/README.md:579:const webpack = require('webpack')
+./node_modules/dotenv/README.md:581:const NodePolyfillPlugin = require('node-polyfill-webpack-plugin')
+./node_modules/event-target-shim/README.md:15:import {EventTarget, defineEventAttribute} from "event-target-shim"
+./node_modules/event-target-shim/README.md:48:import {EventTarget, defineEventAttribute} from "event-target-shim"
+./node_modules/event-target-shim/README.md:50:const {EventTarget, defineEventAttribute} = require("event-target-shim")
+./node_modules/event-target-shim/README.md:155:import { EventTarget, defineEventAttribute } from "event-target-shim";
+./node_modules/body-parser/node_modules/debug/README.md:134:const createDebug = require('debug')
+./node_modules/semver/README.md:15:const semver = require('semver')
+./node_modules/semver/README.md:33:const semver = require('semver')
+./node_modules/semver/README.md:39:const SemVer = require('semver/classes/semver')
+./node_modules/semver/README.md:40:const Comparator = require('semver/classes/comparator')
+./node_modules/semver/README.md:41:const Range = require('semver/classes/range')
+./node_modules/semver/README.md:44:const semverParse = require('semver/functions/parse')
+./node_modules/semver/README.md:45:const semverValid = require('semver/functions/valid')
+./node_modules/semver/README.md:46:const semverClean = require('semver/functions/clean')
+./node_modules/semver/README.md:47:const semverInc = require('semver/functions/inc')
+./node_modules/semver/README.md:48:const semverDiff = require('semver/functions/diff')
+./node_modules/semver/README.md:49:const semverMajor = require('semver/functions/major')
+./node_modules/semver/README.md:50:const semverMinor = require('semver/functions/minor')
+./node_modules/semver/README.md:51:const semverPatch = require('semver/functions/patch')
+./node_modules/semver/README.md:52:const semverPrerelease = require('semver/functions/prerelease')
+./node_modules/semver/README.md:53:const semverCompare = require('semver/functions/compare')
+./node_modules/semver/README.md:54:const semverRcompare = require('semver/functions/rcompare')
+./node_modules/semver/README.md:55:const semverCompareLoose = require('semver/functions/compare-loose')
+./node_modules/semver/README.md:56:const semverCompareBuild = require('semver/functions/compare-build')
+./node_modules/semver/README.md:57:const semverSort = require('semver/functions/sort')
+./node_modules/semver/README.md:58:const semverRsort = require('semver/functions/rsort')
+./node_modules/semver/README.md:61:const semverGt = require('semver/functions/gt')
+./node_modules/semver/README.md:62:const semverLt = require('semver/functions/lt')
+./node_modules/semver/README.md:63:const semverEq = require('semver/functions/eq')
+./node_modules/semver/README.md:64:const semverNeq = require('semver/functions/neq')
+./node_modules/semver/README.md:65:const semverGte = require('semver/functions/gte')
+./node_modules/semver/README.md:66:const semverLte = require('semver/functions/lte')
+./node_modules/semver/README.md:67:const semverCmp = require('semver/functions/cmp')
+./node_modules/semver/README.md:68:const semverCoerce = require('semver/functions/coerce')
+./node_modules/semver/README.md:71:const semverSatisfies = require('semver/functions/satisfies')
+./node_modules/semver/README.md:72:const semverMaxSatisfying = require('semver/ranges/max-satisfying')
+./node_modules/semver/README.md:73:const semverMinSatisfying = require('semver/ranges/min-satisfying')
+./node_modules/semver/README.md:74:const semverToComparators = require('semver/ranges/to-comparators')
+./node_modules/semver/README.md:75:const semverMinVersion = require('semver/ranges/min-version')
+./node_modules/semver/README.md:76:const semverValidRange = require('semver/ranges/valid')
+./node_modules/semver/README.md:77:const semverOutside = require('semver/ranges/outside')
+./node_modules/semver/README.md:78:const semverGtr = require('semver/ranges/gtr')
+./node_modules/semver/README.md:79:const semverLtr = require('semver/ranges/ltr')
+./node_modules/semver/README.md:80:const semverIntersects = require('semver/ranges/intersects')
+./node_modules/semver/README.md:81:const semverSimplifyRange = require('semver/ranges/simplify')
+./node_modules/semver/README.md:82:const semverRangeSubset = require('semver/ranges/subset')
+./node_modules/semver/README.md:590:const semver = require('semver');
+./node_modules/semver/README.md:604:const semver = require('semver');
+./node_modules/raw-body/README.md:192:import * as getRawBody from 'raw-body';
+./node_modules/raw-body/README.md:193:import * as http from 'http';
+./node_modules/raw-body/index.d.ts:1:import { Readable } from 'stream';
+./node_modules/openai/bin/cli:3:const { spawnSync } = require('child_process');
+./node_modules/openai/src/_vendor/zod-to-json-schema/Options.ts:1:import { ZodSchema, ZodTypeDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/util.ts:1:import type { ZodSchema, ZodTypeDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/Refs.ts:1:import type { ZodTypeDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/zodToJsonSchema.ts:1:import { ZodSchema } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parseDef.ts:1:import { ZodFirstPartyTypeKind, ZodTypeDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/nullable.ts:1:import { ZodNullableDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/string.ts:2:import { ZodStringDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/tuple.ts:1:import { ZodTupleDef, ZodTupleItems, ZodTypeAny } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/array.ts:1:import { ZodArrayDef, ZodFirstPartyTypeKind } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/nativeEnum.ts:1:import { ZodNativeEnumDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/object.ts:1:import { ZodObjectDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/branded.ts:1:import { ZodBrandedDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/record.ts:1:import { ZodFirstPartyTypeKind, ZodMapDef, ZodRecordDef, ZodTypeAny } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/catch.ts:1:import { ZodCatchDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/effects.ts:1:import { ZodEffectsDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/literal.ts:1:import { ZodLiteralDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/pipeline.ts:1:import { ZodPipelineDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/enum.ts:1:import { ZodEnumDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/map.ts:1:import { ZodMapDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/bigint.ts:1:import { ZodBigIntDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/union.ts:1:import { ZodDiscriminatedUnionDef, ZodLiteralDef, ZodTypeAny, ZodUnionDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/optional.ts:1:import { ZodOptionalDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/readonly.ts:1:import { ZodReadonlyDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/date.ts:1:import { ZodDateDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/default.ts:1:import { ZodDefaultDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/set.ts:1:import { ZodSetDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/promise.ts:1:import { ZodPromiseDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/intersection.ts:1:import { ZodIntersectionDef } from 'zod';
+./node_modules/openai/src/_vendor/zod-to-json-schema/parsers/number.ts:1:import { ZodNumberDef } from 'zod';
+./node_modules/openai/src/helpers/audio.ts:1:import { File } from 'formdata-node';
+./node_modules/openai/src/helpers/audio.ts:2:import { spawn } from 'node:child_process';
+./node_modules/openai/src/helpers/audio.ts:3:import { Readable } from 'node:stream';
+./node_modules/openai/src/helpers/audio.ts:4:import { platform, versions } from 'node:process';
+./node_modules/openai/src/helpers/zod.ts:2:import type { infer as zodInfer, ZodType } from 'zod';
+./node_modules/openai/src/_shims/index.js:5:const auto = require('openai/_shims/auto/runtime');
+./node_modules/openai/src/_shims/node-runtime.ts:4:import * as nf from 'node-fetch';
+./node_modules/openai/src/_shims/node-runtime.ts:5:import * as fd from 'formdata-node';
+./node_modules/openai/src/_shims/node-runtime.ts:6:import { type File, type FilePropertyBag } from 'formdata-node';
+./node_modules/openai/src/_shims/node-runtime.ts:7:import KeepAliveAgent from 'agentkeepalive';
+./node_modules/openai/src/_shims/node-runtime.ts:8:import { AbortController as AbortControllerPolyfill } from 'abort-controller';
+./node_modules/openai/src/_shims/node-runtime.ts:9:import { ReadStream as FsReadStream } from 'node:fs';
+./node_modules/openai/src/_shims/node-runtime.ts:10:import { type Agent } from 'node:http';
+./node_modules/openai/src/_shims/node-runtime.ts:11:import { FormDataEncoder } from 'form-data-encoder';
+./node_modules/openai/src/_shims/node-runtime.ts:12:import { Readable } from 'node:stream';
+./node_modules/openai/src/_shims/node-runtime.ts:16:import { ReadableStream } from 'node:stream/web';
+./node_modules/openai/src/_shims/bun-runtime.ts:6:import { ReadStream as FsReadStream } from 'node:fs';
+./node_modules/openai/src/_shims/node-types.d.ts:4:import * as nf from 'node-fetch';
+./node_modules/openai/src/_shims/node-types.d.ts:5:import * as fd from 'formdata-node';
+./node_modules/openai/src/beta/realtime/ws.ts:1:import * as WS from 'ws';
+./node_modules/openai/README.md:27:import OpenAI from 'jsr:@openai/openai';
+./node_modules/openai/README.md:37:import OpenAI from 'openai';
+./node_modules/openai/README.md:55:import OpenAI from 'openai';
+./node_modules/openai/README.md:77:import OpenAI from 'openai';
+./node_modules/openai/README.md:102:import fs from 'fs';
+./node_modules/openai/README.md:103:import fetch from 'node-fetch';
+./node_modules/openai/README.md:104:import OpenAI, { toFile } from 'openai';
+./node_modules/openai/README.md:268:import { OpenAIRealtimeWebSocket } from 'openai/beta/realtime/websocket';
+./node_modules/openai/README.md:287:import { AzureOpenAI } from 'openai';
+./node_modules/openai/README.md:288:import { getBearerTokenProvider, DefaultAzureCredential } from '@azure/identity';
+./node_modules/openai/README.md:394:import OpenAI from 'openai';
+./node_modules/openai/README.md:406:import { fetch } from 'undici'; // as one example
+./node_modules/openai/README.md:407:import OpenAI from 'openai';
+./node_modules/openai/README.md:430:import http from 'http';
+./node_modules/openai/README.md:431:import { HttpsProxyAgent } from 'https-proxy-agent';
+./node_modules/openai/_vendor/zod-to-json-schema/Options.d.ts:1:import { ZodSchema, ZodTypeDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/Refs.d.ts:1:import type { ZodTypeDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parseDef.d.ts:1:import { ZodTypeDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parseDef.mjs:1:import { ZodFirstPartyTypeKind } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/zodToJsonSchema.d.ts:1:import { ZodSchema } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/array.mjs:1:import { ZodFirstPartyTypeKind } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/bigint.d.ts:1:import { ZodBigIntDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/literal.d.ts:1:import { ZodLiteralDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/record.mjs:1:import { ZodFirstPartyTypeKind } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/pipeline.d.ts:1:import { ZodPipelineDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/promise.d.ts:1:import { ZodPromiseDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/nullable.d.ts:1:import { ZodNullableDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/optional.d.ts:1:import { ZodOptionalDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/effects.d.ts:1:import { ZodEffectsDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/nativeEnum.d.ts:1:import { ZodNativeEnumDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/date.d.ts:1:import { ZodDateDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/branded.d.ts:1:import { ZodBrandedDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/tuple.d.ts:1:import { ZodTupleDef, ZodTupleItems, ZodTypeAny } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/array.js:4:const zod_1 = require("zod");
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/catch.d.ts:1:import { ZodCatchDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/set.d.ts:1:import { ZodSetDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/union.d.ts:1:import { ZodDiscriminatedUnionDef, ZodUnionDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/intersection.d.ts:1:import { ZodIntersectionDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/string.d.ts:1:import { ZodStringDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/record.js:4:const zod_1 = require("zod");
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/number.d.ts:1:import { ZodNumberDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/object.d.ts:1:import { ZodObjectDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/enum.d.ts:1:import { ZodEnumDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/map.d.ts:1:import { ZodMapDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/readonly.d.ts:1:import { ZodReadonlyDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/array.d.ts:1:import { ZodArrayDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/record.d.ts:1:import { ZodMapDef, ZodRecordDef, ZodTypeAny } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parsers/default.d.ts:1:import { ZodDefaultDef } from 'zod';
+./node_modules/openai/_vendor/zod-to-json-schema/parseDef.js:4:const zod_1 = require("zod");
+./node_modules/openai/_vendor/zod-to-json-schema/util.d.ts:1:import type { ZodSchema, ZodTypeDef } from 'zod';
+./node_modules/openai/helpers/zod.d.ts:2:import type { infer as zodInfer, ZodType } from 'zod';
+./node_modules/openai/helpers/audio.js:4:const formdata_node_1 = require("formdata-node");
+./node_modules/openai/helpers/audio.js:5:const node_child_process_1 = require("node:child_process");
+./node_modules/openai/helpers/audio.js:6:const node_stream_1 = require("node:stream");
+./node_modules/openai/helpers/audio.js:7:const node_process_1 = require("node:process");
+./node_modules/openai/helpers/audio.mjs:1:import { File } from 'formdata-node';
+./node_modules/openai/helpers/audio.mjs:2:import { spawn } from 'node:child_process';
+./node_modules/openai/helpers/audio.mjs:3:import { Readable } from 'node:stream';
+./node_modules/openai/helpers/audio.mjs:4:import { platform, versions } from 'node:process';
+./node_modules/openai/helpers/audio.d.ts:2:import { File } from 'formdata-node';
+./node_modules/openai/helpers/audio.d.ts:3:import { Response } from 'openai/_shims';
+./node_modules/openai/_shims/bun-runtime.js:5:const node_fs_1 = require("node:fs");
+./node_modules/openai/_shims/index.mjs:5:import * as auto from 'openai/_shims/auto/runtime';
+./node_modules/openai/_shims/index.js:5:const auto = require('openai/_shims/auto/runtime');
+./node_modules/openai/_shims/node-runtime.mjs:1:import * as nf from 'node-fetch';
+./node_modules/openai/_shims/node-runtime.mjs:2:import * as fd from 'formdata-node';
+./node_modules/openai/_shims/node-runtime.mjs:3:import KeepAliveAgent from 'agentkeepalive';
+./node_modules/openai/_shims/node-runtime.mjs:4:import { AbortController as AbortControllerPolyfill } from 'abort-controller';
+./node_modules/openai/_shims/node-runtime.mjs:5:import { ReadStream as FsReadStream } from 'node:fs';
+./node_modules/openai/_shims/node-runtime.mjs:6:import { FormDataEncoder } from 'form-data-encoder';
+./node_modules/openai/_shims/node-runtime.mjs:7:import { Readable } from 'node:stream';
+./node_modules/openai/_shims/node-runtime.mjs:9:import { ReadableStream } from 'node:stream/web';
+./node_modules/openai/_shims/node-runtime.js:36:const abort_controller_1 = require("abort-controller");
+./node_modules/openai/_shims/node-runtime.js:37:const node_fs_1 = require("node:fs");
+./node_modules/openai/_shims/node-runtime.js:38:const form_data_encoder_1 = require("form-data-encoder");
+./node_modules/openai/_shims/node-runtime.js:39:const node_stream_1 = require("node:stream");
+./node_modules/openai/_shims/node-runtime.js:41:const web_1 = require("node:stream/web");
+./node_modules/openai/_shims/node-types.d.ts:4:import * as nf from 'node-fetch';
+./node_modules/openai/_shims/node-types.d.ts:5:import * as fd from 'formdata-node';
+./node_modules/openai/_shims/bun-runtime.mjs:2:import { ReadStream as FsReadStream } from 'node:fs';
+./node_modules/openai/_shims/index.d.ts:5:import * as auto from 'openai/_shims/auto/types';
+./node_modules/openai/beta/realtime/ws.mjs:1:import * as WS from 'ws';
+./node_modules/openai/beta/realtime/ws.d.ts:2:import * as WS from 'ws';
+./node_modules/bcrypt/README.md:104:const bcrypt = require('bcrypt');
+./node_modules/bcrypt/README.md:185:import bcrypt from "bcrypt";
+./node_modules/bcrypt/README.md:194:const bcrypt = require('bcrypt');
+./node_modules/bcrypt/bcrypt.js:1:const path = require('path');
+./node_modules/bcrypt/bcrypt.js:2:const bindings = require('node-gyp-build')(path.resolve(__dirname));
+./node_modules/bcrypt/bcrypt.js:4:const crypto = require('crypto');
+./node_modules/whatwg-url/lib/url-state-machine.js:2:const punycode = require("punycode");
+./node_modules/whatwg-url/lib/url-state-machine.js:3:const tr46 = require("tr46");
+./node_modules/whatwg-url/lib/URL.js:3:const conversions = require("webidl-conversions");
+./node_modules/compression/node_modules/debug/README.md:134:const createDebug = require('debug')
+./node_modules/@types/node/dgram.d.ts:29:    import { AddressInfo } from "node:net";
+./node_modules/@types/node/dgram.d.ts:30:    import * as dns from "node:dns";
+./node_modules/@types/node/dgram.d.ts:31:    import { Abortable, EventEmitter } from "node:events";
+./node_modules/@types/node/fs.d.ts:22:    import * as stream from "node:stream";
+./node_modules/@types/node/fs.d.ts:23:    import { Abortable, EventEmitter } from "node:events";
+./node_modules/@types/node/fs.d.ts:24:    import { URL } from "node:url";
+./node_modules/@types/node/fs.d.ts:25:    import * as promises from "node:fs/promises";
+./node_modules/@types/node/v8.d.ts:10:    import { Readable } from "node:stream";
+./node_modules/@types/node/net.d.ts:16:    import * as stream from "node:stream";
+./node_modules/@types/node/net.d.ts:17:    import { Abortable, EventEmitter } from "node:events";
+./node_modules/@types/node/net.d.ts:18:    import * as dns from "node:dns";
+./node_modules/@types/node/readline.d.ts:36:    import { Abortable, EventEmitter } from "node:events";
+./node_modules/@types/node/readline.d.ts:37:    import * as promises from "node:readline/promises";
+./node_modules/@types/node/events.d.ts:38:    import { AsyncResource, AsyncResourceOptions } from "node:async_hooks";
+./node_modules/@types/node/worker_threads.d.ts:55:    import { Context } from "node:vm";
+./node_modules/@types/node/worker_threads.d.ts:56:    import { EventEmitter, NodeEventTarget } from "node:events";
+./node_modules/@types/node/worker_threads.d.ts:57:    import { EventLoopUtilityFunction } from "node:perf_hooks";
+./node_modules/@types/node/worker_threads.d.ts:58:    import { FileHandle } from "node:fs/promises";
+./node_modules/@types/node/worker_threads.d.ts:59:    import { Readable, Writable } from "node:stream";
+./node_modules/@types/node/worker_threads.d.ts:60:    import { ReadableStream, TransformStream, WritableStream } from "node:stream/web";
+./node_modules/@types/node/worker_threads.d.ts:61:    import { URL } from "node:url";
+./node_modules/@types/node/worker_threads.d.ts:62:    import { MessageEvent } from "undici-types";
+./node_modules/@types/node/diagnostics_channel.d.ts:26:    import { AsyncLocalStorage } from "node:async_hooks";
+./node_modules/@types/node/assert/strict.d.ts:2:    import { strict } from "node:assert";
+./node_modules/@types/node/assert/strict.d.ts:6:    import { strict } from "node:assert";
+./node_modules/@types/node/buffer.d.ts:51:    import { BinaryLike } from "node:crypto";
+./node_modules/@types/node/buffer.d.ts:52:    import { ReadableStream as WebReadableStream } from "node:stream/web";
+./node_modules/@types/node/stream/consumers.d.ts:7:    import { Blob as NodeBlob } from "node:buffer";
+./node_modules/@types/node/stream/consumers.d.ts:8:    import { ReadableStream as WebReadableStream } from "node:stream/web";
+./node_modules/@types/node/module.d.ts:5:    import { URL } from "node:url";
+./node_modules/@types/node/module.d.ts:6:    import { MessagePort } from "node:worker_threads";
+./node_modules/@types/node/web-globals/fetch.d.ts:3:import * as undici from "undici-types";
+./node_modules/@types/node/zlib.d.ts:94:    import * as stream from "node:stream";
+./node_modules/@types/node/url.d.ts:11:    import { Blob as NodeBlob } from "node:buffer";
+./node_modules/@types/node/url.d.ts:12:    import { ClientRequestArgs } from "node:http";
+./node_modules/@types/node/url.d.ts:13:    import { ParsedUrlQuery, ParsedUrlQueryInput } from "node:querystring";
+./node_modules/@types/node/url.d.ts:925:    import { URL as _URL, URLSearchParams as _URLSearchParams } from "url";
+./node_modules/@types/node/cluster.d.ts:56:    import * as child from "node:child_process";
+./node_modules/@types/node/cluster.d.ts:58:    import * as net from "node:net";
+./node_modules/@types/node/tls.d.ts:12:    import { X509Certificate } from "node:crypto";
+./node_modules/@types/node/tls.d.ts:13:    import * as net from "node:net";
+./node_modules/@types/node/tls.d.ts:14:    import * as stream from "stream";
+./node_modules/@types/node/http2.d.ts:13:    import * as fs from "node:fs";
+./node_modules/@types/node/http2.d.ts:14:    import * as net from "node:net";
+./node_modules/@types/node/http2.d.ts:15:    import * as stream from "node:stream";
+./node_modules/@types/node/http2.d.ts:16:    import * as tls from "node:tls";
+./node_modules/@types/node/http2.d.ts:17:    import * as url from "node:url";
+./node_modules/@types/node/perf_hooks.d.ts:32:    import { AsyncResource } from "node:async_hooks";
+./node_modules/@types/node/perf_hooks.d.ts:844:    import { performance as _performance } from "perf_hooks";
+./node_modules/@types/node/vm.d.ts:40:    import { ImportAttributes } from "node:module";
+./node_modules/@types/node/dns.d.ts:48:    import * as dnsPromises from "node:dns/promises";
+./node_modules/@types/node/repl.d.ts:12:    import { AsyncCompleter, Completer, Interface } from "node:readline";
+./node_modules/@types/node/repl.d.ts:13:    import { Context } from "node:vm";
+./node_modules/@types/node/repl.d.ts:14:    import { InspectOptions } from "node:util";
+./node_modules/@types/node/process.d.ts:2:    import * as tty from "node:tty";
+./node_modules/@types/node/process.d.ts:3:    import { Worker } from "node:worker_threads";
+./node_modules/@types/node/readline/promises.d.ts:8:    import { Abortable } from "node:events";
+./node_modules/@types/node/console.d.ts:64:    import { InspectOptions } from "node:util";
+./node_modules/@types/node/crypto.d.ts:19:    import * as stream from "node:stream";
+./node_modules/@types/node/crypto.d.ts:20:    import { PeerCertificate } from "node:tls";
+./node_modules/@types/node/tty.d.ts:28:    import * as net from "node:net";
+./node_modules/@types/node/http.d.ts:43:    import * as stream from "node:stream";
+./node_modules/@types/node/http.d.ts:44:    import { URL } from "node:url";
+./node_modules/@types/node/http.d.ts:45:    import { EventEmitter } from "node:events";
+./node_modules/@types/node/http.d.ts:46:    import { LookupOptions } from "node:dns";
+./node_modules/@types/node/http.d.ts:47:    import { LookupFunction, Server as NetServer, Socket, TcpSocketConnectOpts } from "node:net";
+./node_modules/@types/node/timers.d.ts:12:    import { Abortable } from "node:events";
+./node_modules/@types/node/timers.d.ts:13:    import * as promises from "node:timers/promises";
+./node_modules/@types/node/test.d.ts:1170:    import { Transform } from "node:stream";
+./node_modules/@types/node/test.d.ts:1171:    import { EventData } from "node:test";
+./node_modules/@types/node/https.d.ts:7:    import { Duplex } from "node:stream";
+./node_modules/@types/node/https.d.ts:8:    import * as tls from "node:tls";
+./node_modules/@types/node/https.d.ts:9:    import * as http from "node:http";
+./node_modules/@types/node/https.d.ts:10:    import { URL } from "node:url";
+./node_modules/@types/node/stream.d.ts:20:    import { Abortable, EventEmitter } from "node:events";
+./node_modules/@types/node/stream.d.ts:21:    import { Blob as NodeBlob } from "node:buffer";
+./node_modules/@types/node/stream.d.ts:22:    import * as streamPromises from "node:stream/promises";
+./node_modules/@types/node/stream.d.ts:23:    import * as streamWeb from "node:stream/web";
+./node_modules/@types/node/child_process.d.ts:69:    import { Abortable, EventEmitter } from "node:events";
+./node_modules/@types/node/child_process.d.ts:70:    import * as net from "node:net";
+./node_modules/@types/node/child_process.d.ts:71:    import { Pipe, Readable, Stream, Writable } from "node:stream";
+./node_modules/@types/node/child_process.d.ts:72:    import { URL } from "node:url";
+./node_modules/@types/node/fs/promises.d.ts:12:    import { Abortable } from "node:events";
+./node_modules/@types/node/fs/promises.d.ts:13:    import { Stream } from "node:stream";
+./node_modules/@types/node/fs/promises.d.ts:14:    import { ReadableStream } from "node:stream/web";
+./node_modules/@types/node/fs/promises.d.ts:43:    import { Interface as ReadlineInterface } from "node:readline";
+./node_modules/@types/node/util.d.ts:12:    import * as types from "node:util/types";
+./node_modules/@types/node/util.d.ts:1248:    import { TextDecoder as _TextDecoder, TextEncoder as _TextEncoder } from "util";
+./node_modules/@types/node/util.d.ts:1586:    import { KeyObject, webcrypto } from "node:crypto";
+./node_modules/@types/node/timers/promises.d.ts:17:    import { TimerOptions } from "node:timers";
+./node_modules/@types/node-fetch/index.d.ts:4:import { RequestOptions } from "http";
+./node_modules/@types/node-fetch/index.d.ts:5:import { URL, URLSearchParams } from "url";
+./node_modules/@types/whatwg-url/lib/URL-impl.d.ts:1:import { Globals } from "webidl-conversions";
+./node_modules/mongoose/types/schematypes.d.ts:1:import * as BSON from 'bson';
+./node_modules/mongoose/lib/cursor/changeStream.js:7:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/cursor/aggregationCursor.js:8:const Readable = require('stream').Readable;
+./node_modules/mongoose/lib/cursor/aggregationCursor.js:11:const kareem = require('kareem');
+./node_modules/mongoose/lib/cursor/aggregationCursor.js:12:const util = require('util');
+./node_modules/mongoose/lib/cursor/queryCursor.js:8:const Readable = require('stream').Readable;
+./node_modules/mongoose/lib/cursor/queryCursor.js:11:const kareem = require('kareem');
+./node_modules/mongoose/lib/cursor/queryCursor.js:13:const { once } = require('events');
+./node_modules/mongoose/lib/cursor/queryCursor.js:14:const util = require('util');
+./node_modules/mongoose/lib/types/subdocument.js:6:const util = require('util');
+./node_modules/mongoose/lib/types/objectid.js:13:const ObjectId = require('bson').ObjectId;
+./node_modules/mongoose/lib/types/map.js:9:const util = require('util');
+./node_modules/mongoose/lib/types/arraySubdocument.js:7:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/types/array/methods/index.js:9:const mpath = require('mpath');
+./node_modules/mongoose/lib/types/buffer.js:7:const Binary = require('bson').Binary;
+./node_modules/mongoose/lib/types/buffer.js:8:const UUID = require('bson').UUID;
+./node_modules/mongoose/lib/mongoose.js:8:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/mongoose.js:9:const Kareem = require('kareem');
+./node_modules/mongoose/lib/mongoose.js:42:const { AsyncLocalStorage } = require('node:async_hooks');
+./node_modules/mongoose/lib/schema.js:7:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/schema.js:8:const Kareem = require('kareem');
+./node_modules/mongoose/lib/schema.js:23:const mpath = require('mpath');
+./node_modules/mongoose/lib/cast/number.js:3:const assert = require('assert');
+./node_modules/mongoose/lib/cast/date.js:3:const assert = require('assert');
+./node_modules/mongoose/lib/cast/decimal128.js:4:const assert = require('assert');
+./node_modules/mongoose/lib/cast/double.js:3:const assert = require('assert');
+./node_modules/mongoose/lib/cast/double.js:4:const BSON = require('bson');
+./node_modules/mongoose/lib/cast/bigint.js:3:const { Long } = require('bson');
+./node_modules/mongoose/lib/cast/int32.js:4:const assert = require('assert');
+./node_modules/mongoose/lib/utils.js:7:const UUID = require('bson').UUID;
+./node_modules/mongoose/lib/utils.js:8:const ms = require('ms');
+./node_modules/mongoose/lib/utils.js:9:const mpath = require('mpath');
+./node_modules/mongoose/lib/cast.js:16:const util = require('util');
+./node_modules/mongoose/lib/document.js:8:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/document.js:38:const inspect = require('util').inspect;
+./node_modules/mongoose/lib/document.js:42:const mpath = require('mpath');
+./node_modules/mongoose/lib/connection.js:8:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/model.js:11:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/model.js:12:const Kareem = require('kareem');
+./node_modules/mongoose/lib/model.js:66:const util = require('util');
+./node_modules/mongoose/lib/helpers/populate/removeDeselectedForeignField.js:4:const mpath = require('mpath');
+./node_modules/mongoose/lib/helpers/populate/validateRef.js:4:const util = require('util');
+./node_modules/mongoose/lib/helpers/populate/getSchemaTypes.js:11:const mpath = require('mpath');
+./node_modules/mongoose/lib/helpers/populate/modelNamesFromRefPath.js:6:const mpath = require('mpath');
+./node_modules/mongoose/lib/helpers/populate/modelNamesFromRefPath.js:7:const util = require('util');
+./node_modules/mongoose/lib/helpers/populate/getModelsMapForPopulate.js:12:const mpath = require('mpath');
+./node_modules/mongoose/lib/helpers/populate/assignVals.js:11:const mpath = require('mpath');
+./node_modules/mongoose/lib/helpers/populate/assignVals.js:12:const sift = require('sift').default;
+./node_modules/mongoose/lib/helpers/common.js:7:const Binary = require('bson').Binary;
+./node_modules/mongoose/lib/helpers/common.js:11:const util = require('util');
+./node_modules/mongoose/lib/helpers/model/castBulkWrite.js:11:const { inspect } = require('util');
+./node_modules/mongoose/lib/helpers/document/applyTimestamps.js:4:const mpath = require('mpath');
+./node_modules/mongoose/lib/helpers/document/applyVirtuals.js:3:const mpath = require('mpath');
+./node_modules/mongoose/lib/helpers/clone.js:14:const BSON = require('bson');
+./node_modules/mongoose/lib/error/cast.js:8:const util = require('util');
+./node_modules/mongoose/lib/error/notFound.js:8:const util = require('util');
+./node_modules/mongoose/lib/error/validation.js:9:const util = require('util');
+./node_modules/mongoose/lib/error/setOptionError.js:8:const util = require('util');
+./node_modules/mongoose/lib/browserDocument.js:8:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/drivers/browser/objectid.js:10:const ObjectId = require('bson').ObjectID;
+./node_modules/mongoose/lib/drivers/browser/binary.js:8:const Binary = require('bson').Binary;
+./node_modules/mongoose/lib/drivers/node-mongodb-native/bulkWriteResult.js:3:const BulkWriteResult = require('mongodb/lib/bulk/common').BulkWriteResult;
+./node_modules/mongoose/lib/drivers/node-mongodb-native/connection.js:10:const mongodb = require('mongodb');
+./node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:9:const Collection = require('mongodb').Collection;
+./node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:13:const stream = require('stream');
+./node_modules/mongoose/lib/drivers/node-mongodb-native/collection.js:14:const util = require('util');
+./node_modules/mongoose/lib/query.js:9:const Kareem = require('kareem');
+./node_modules/mongoose/lib/query.js:30:const mpath = require('mpath');
+./node_modules/mongoose/lib/query.js:31:const mquery = require('mquery');
+./node_modules/mongoose/lib/query.js:40:const util = require('util');
+./node_modules/mongoose/lib/collection.js:7:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/schema/subdocument.js:8:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/lib/schema/array.js:21:const util = require('util');
+./node_modules/mongoose/lib/schema/documentArray.js:9:const EventEmitter = require('events').EventEmitter;
+./node_modules/mongoose/README.md:77:const mongoose = require('mongoose');
+./node_modules/mongoose/README.md:80:import mongoose from 'mongoose';
+./node_modules/mongoose/README.md:86:import { createRequire } from 'https://deno.land/std@0.177.0/node/module.ts';
+./node_modules/mongoose/README.md:89:const mongoose = require('mongoose');
+./node_modules/sift/README.md:23:import sift from "sift";
+./node_modules/sift/README.md:72:import sift from "sift";
+./node_modules/sift/README.md:88:import { createQueryTester, $eq, $in } from "sift";
+./node_modules/sift/README.md:97:import { createQueryTester, createEqualsOperation, $eq, $in } from "sift";
+./node_modules/sift/README.md:427:import sift, { createEqualsOperation } from "sift";
+./node_modules/sift/README.md:454:import { createQueryTester, $in, $all, $nin, $lt } from "sift";
+./node_modules/object-assign/readme.md:23:const objectAssign = require('object-assign');
+./node_modules/mpath/test/stringToParts.js:3:const assert = require('assert');
+./node_modules/mpath/test/index.js:8:const assert = require('assert');
+./node_modules/side-channel-map/README.md:24:const assert = require('assert');
+./node_modules/side-channel-map/README.md:25:const getSideChannelMap = require('side-channel-map');
+./node_modules/call-bound/README.md:23:const assert = require('assert');
+./node_modules/call-bound/README.md:24:const callBound = require('call-bound');
+./node_modules/form-data/index.d.ts:7:import * as stream from 'stream';
+./node_modules/form-data/index.d.ts:8:import * as http from 'http';
+./node_modules/helmet/README.md:6:import helmet from "helmet";
+./node_modules/helmet/index.d.mts:1:import {IncomingMessage, ServerResponse} from "http"
+./node_modules/helmet/index.d.cts:1:import {IncomingMessage, ServerResponse} from "http"
+./node_modules/pdf-parse/dist/worker/esm/index.js:2:import path from "node:path";
+./node_modules/pdf-parse/dist/worker/esm/index.js:3:import { fileURLToPath } from "node:url";
+./node_modules/pdf-parse/dist/worker/esm/index.js:9:import { Canvas, createCanvas, DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
+./node_modules/pdf-parse/dist/worker/esm/index.d.ts:1:import { Canvas } from '@napi-rs/canvas';
+./node_modules/pdf-parse/dist/worker/esm/index.d.ts:2:import { SKRSContext2D } from '@napi-rs/canvas';
+./node_modules/pdf-parse/dist/worker/cjs/index.d.cts:1:import { Canvas } from '@napi-rs/canvas';
+./node_modules/pdf-parse/dist/worker/cjs/index.d.cts:2:import { SKRSContext2D } from '@napi-rs/canvas';
+./node_modules/pdf-parse/dist/node/esm/getHeader.js:1:import * as http from 'node:http';
+./node_modules/pdf-parse/dist/node/esm/getHeader.js:2:import * as https from 'node:https';
+./node_modules/pdf-parse/dist/pdf-parse/web/pdf-parse.es.d.ts:1:import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api.js';
+./node_modules/pdf-parse/dist/pdf-parse/web/pdf-parse.es.d.ts:2:import type { ImageKind } from 'pdfjs-dist/legacy/build/pdf.mjs';
+./node_modules/pdf-parse/dist/pdf-parse/web/pdf-parse.es.d.ts:3:import { Metadata } from 'pdfjs-dist/types/src/display/metadata.js';
+./node_modules/pdf-parse/dist/pdf-parse/web/pdf-parse.es.d.ts:4:import type { PDFDataRangeTransport } from 'pdfjs-dist/types/src/display/api.js';
+./node_modules/pdf-parse/dist/pdf-parse/web/pdf-parse.es.d.ts:5:import type { PDFWorker } from 'pdfjs-dist/types/src/display/api.js';
+./node_modules/pdf-parse/dist/pdf-parse/web/pdf-parse.es.d.ts:6:import { VerbosityLevel } from 'pdfjs-dist/legacy/build/pdf.mjs';
+./node_modules/pdf-parse/dist/pdf-parse/esm/InfoResult.js:1:import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+./node_modules/pdf-parse/dist/pdf-parse/esm/LoadParameters.d.ts:2:import type { DocumentInitParameters, PDFDataRangeTransport, PDFWorker } from 'pdfjs-dist/types/src/display/api.js';
+./node_modules/pdf-parse/dist/pdf-parse/esm/ImageResult.d.ts:1:import type { ImageKind } from 'pdfjs-dist/legacy/build/pdf.mjs';
+./node_modules/pdf-parse/dist/pdf-parse/esm/InfoResult.d.ts:1:import type { Metadata } from 'pdfjs-dist/types/src/display/metadata.js';
+./node_modules/pdf-parse/dist/pdf-parse/esm/PDFParse.js:1:import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+./node_modules/pdf-parse/dist/pdf-parse/cjs/index.d.cts:1:import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api.js';
+./node_modules/pdf-parse/dist/pdf-parse/cjs/index.d.cts:2:import type { ImageKind } from 'pdfjs-dist/legacy/build/pdf.mjs';
+./node_modules/pdf-parse/dist/pdf-parse/cjs/index.d.cts:3:import { Metadata } from 'pdfjs-dist/types/src/display/metadata.js';
+./node_modules/pdf-parse/dist/pdf-parse/cjs/index.d.cts:4:import type { PDFDataRangeTransport } from 'pdfjs-dist/types/src/display/api.js';
+./node_modules/pdf-parse/dist/pdf-parse/cjs/index.d.cts:5:import type { PDFWorker } from 'pdfjs-dist/types/src/display/api.js';
+./node_modules/pdf-parse/dist/pdf-parse/cjs/index.d.cts:6:import { VerbosityLevel } from 'pdfjs-dist/legacy/build/pdf.mjs';
+./node_modules/pdf-parse/bin/cli.mjs:3:import { mkdir, readFile, writeFile } from 'node:fs/promises';
+./node_modules/pdf-parse/bin/cli.mjs:4:import { stderr, stdout } from 'node:process';
+./node_modules/pdf-parse/bin/cli.mjs:5:import { PDFParse } from 'pdf-parse';
+./node_modules/pdf-parse/bin/cli.mjs:6:import { getHeader } from 'pdf-parse/node';
+./node_modules/pdf-parse/bin/cli.test.mjs:1:import { strict as assert } from 'node:assert';
+./node_modules/pdf-parse/bin/cli.test.mjs:2:import { exec } from 'node:child_process';
+./node_modules/pdf-parse/bin/cli.test.mjs:3:import { dirname, resolve } from 'node:path';
+./node_modules/pdf-parse/bin/cli.test.mjs:4:import { test } from 'node:test';
+./node_modules/pdf-parse/bin/cli.test.mjs:5:import { fileURLToPath } from 'node:url';
+./node_modules/pdf-parse/bin/cli.test.mjs:6:import { promisify } from 'node:util';
+./node_modules/pdf-parse/README.md:32:const { PDFParse } = require('pdf-parse');
+./node_modules/pdf-parse/README.md:98:import { getHeader } from 'pdf-parse/node';
+./node_modules/pdf-parse/README.md:116:import { readFile } from 'node:fs/promises';
+./node_modules/pdf-parse/README.md:117:import { PDFParse } from 'pdf-parse';
+./node_modules/pdf-parse/README.md:146:import { PDFParse } from 'pdf-parse';
+./node_modules/pdf-parse/README.md:173:import { readFile, writeFile } from 'node:fs/promises';
+./node_modules/pdf-parse/README.md:174:import { PDFParse } from 'pdf-parse';
+./node_modules/pdf-parse/README.md:205:import { readFile, writeFile } from 'node:fs/promises';
+./node_modules/pdf-parse/README.md:206:import { PDFParse } from 'pdf-parse';
+./node_modules/pdf-parse/README.md:233:import { readFile } from 'node:fs/promises';
+./node_modules/pdf-parse/README.md:234:import { PDFParse } from 'pdf-parse';
+./node_modules/pdf-parse/README.md:253:import type { LoadParameters, ParseParameters, TextResult } from 'pdf-parse';
+./node_modules/pdf-parse/README.md:254:import { PasswordException, PDFParse, VerbosityLevel } from 'pdf-parse';
+./node_modules/pdf-parse/README.md:308:  import {PDFParse} from 'https://cdn.jsdelivr.net/npm/pdf-parse@latest/dist/pdf-parse/web/pdf-parse.es.js';
+./node_modules/get-proto/README.md:21:const assert = require('assert');
+./node_modules/get-proto/README.md:22:const getProto = require('get-proto');
+./node_modules/setprototypeof/README.md:30:import setPrototypeOf from 'setprototypeof'
+./node_modules/jsonwebtoken/verify.js:8:const jws = require('jws');
+./node_modules/jsonwebtoken/verify.js:9:const {KeyObject, createSecretKey, createPublicKey} = require("crypto");
+./node_modules/jsonwebtoken/lib/asymmetricKeyDetailsSupported.js:1:const semver = require('semver');
+./node_modules/jsonwebtoken/lib/rsaPssKeyDetailsSupported.js:1:const semver = require('semver');
+./node_modules/jsonwebtoken/sign.js:4:const jws = require('jws');
+./node_modules/jsonwebtoken/sign.js:5:const includes = require('lodash.includes');
+./node_modules/jsonwebtoken/sign.js:6:const isBoolean = require('lodash.isboolean');
+./node_modules/jsonwebtoken/sign.js:7:const isInteger = require('lodash.isinteger');
+./node_modules/jsonwebtoken/sign.js:8:const isNumber = require('lodash.isnumber');
+./node_modules/jsonwebtoken/sign.js:9:const isPlainObject = require('lodash.isplainobject');
+./node_modules/jsonwebtoken/sign.js:10:const isString = require('lodash.isstring');
+./node_modules/jsonwebtoken/sign.js:11:const once = require('lodash.once');
+./node_modules/jsonwebtoken/sign.js:12:const { KeyObject, createSecretKey, createPrivateKey } = require('crypto')
+./node_modules/pdfjs-dist/build/pdf.mjs:8189:    const canvas = require("@napi-rs/canvas");
+./node_modules/pdfjs-dist/legacy/build/pdf.mjs:14386:    const canvas = require("@napi-rs/canvas");
+./node_modules/side-channel/README.md:23:const assert = require('assert');
+./node_modules/side-channel/README.md:24:const getSideChannel = require('side-channel');
+./node_modules/side-channel/index.d.ts:1:import getSideChannelList from 'side-channel-list';
+./node_modules/side-channel/index.d.ts:2:import getSideChannelMap from 'side-channel-map';
+./node_modules/side-channel/index.d.ts:3:import getSideChannelWeakMap from 'side-channel-weakmap';
+./node_modules/punycode/README.md:32:const punycode = require('punycode/');
+./index.backup.js:3:const fs = require('fs');
+./index.backup.js:4:const path = require('path');
+./index.backup.js:5:const express = require('express');
+./index.backup.js:6:const axios = require('axios');
+./index.backup.js:7:const multer = require('multer');
+./index.backup.js:8:const Database = require('better-sqlite3');
+./index.backup.js:385:  const { spawn } = require('child_process');
+./models/Payment.js:1:import mongoose from "mongoose";
+./models/User.js:2:import mongoose from "mongoose";
+./lib/context.js:1:const fs = require('fs');
+./lib/context.js:2:const path = require('path');
+./lib/store.js:1:const path = require('path');
+./lib/store.js:2:const Database = require('better-sqlite3');
+./routes/admin.whitelist.js:2:import express from 'express';
+./routes/auth.js.bak.2025-11-05-075928:2:import express from "express";
+./routes/auth.js.bak.2025-11-05-075928:3:import jwt from "jsonwebtoken";
+./routes/auth.js.bak.2025-11-05-075928:4:import mongoose from "mongoose";
+./routes/auth.js.bak.2025-11-05-125521:1:import express from "express";
+./routes/auth.js.bak.2025-11-05-125521:2:import bcrypt from "bcryptjs";
+./routes/auth.js:2:import express from 'express';
+./routes/auth.js:3:import bcrypt from 'bcryptjs';
+./routes/auth.js:4:import jwt from 'jsonwebtoken';
+./routes/ask.js:2:import OpenAI from "openai";
+./routes/ask.js:3:import fs from "fs";
+./routes/ask.js:4:import path from "path";
+./routes/ask.js:5:import crypto from "crypto";
+./routes/ask.js:6:import { fileURLToPath } from "url";
+./routes/auth.js.bak.2025-11-05-084226:6:import express from "express";
+./routes/auth.js.bak.2025-11-05-084226:7:import jwt from "jsonwebtoken";
+./routes/auth.js.bak.2025-11-05-080257:2:import express from "express";
+./routes/auth.js.bak.2025-11-05-080257:3:import jwt from "jsonwebtoken";
+./routes/auth.js.bak.2025-11-05-084220:6:import express from "express";
+./routes/auth.js.bak.2025-11-05-084220:7:import jwt from "jsonwebtoken";
+./routes/admin.js:2:import { Router } from "express";
+./routes/admin.js:3:import mongoose from "mongoose";
+./server.js.bak.1105-0740:3:import express from "express";
+./server.js.bak.1105-0740:4:import cors from "cors";
+./server.js.bak.1105-0740:5:import helmet from "helmet";
+./server.js.bak.1105-0740:6:import compression from "compression";
+./server.js.bak.1105-0740:7:import morgan from "morgan";
+./server.js.bak.1105-0740:8:import path from "path";
+./server.js.bak.1105-0740:9:import fs from "fs";
+./server.js.bak.1105-0740:10:import { fileURLToPath } from "url";
+./server.js.bak.1105-0740:11:import mongoose from "mongoose";
+./index.js.bak-1758729038:2:const express = require('express');
+./index.js.bak-1758729038:3:const axios = require('axios');
+./index.js.bak-1758729038:4:const fs = require('fs');
+./index.js.bak-1758729038:5:const path = require('path');
+./index.js.bak-1758729038:6:const MiniSearch = require('minisearch');
+./tools/init-db.js:1:const Database = require('better-sqlite3');
+./tools/ingest.js:1:const fs = require('fs');
+./tools/ingest.js:2:const path = require('path');
+./tools/ingest.js:3:const pdfParse = require('pdf-parse');
+./middleware/auth.js:2:import jwt from "jsonwebtoken";
+./scripts/import_handles_whitelist.js:2:import fs from "fs";
+./scripts/import_handles_whitelist.js:3:import mongoose from "mongoose";
+./scripts/slice-composer.cjs:4:const fs = require("fs");
+./scripts/slice-composer.cjs:5:const path = require("path");
+./scripts/slice-composer.cjs:6:const pdf = require("pdf-parse");
+./scripts/slice-composer.cjs:7:const crypto = require("crypto");
+./scripts/make-superprompt.mjs:2:import fs from "fs";
+./scripts/make-superprompt.mjs:3:import path from "path";
+./scripts/make-superprompt.mjs:4:import { fileURLToPath } from "url";
+./scripts/seed_admins.js:3:import mongoose from 'mongoose';
+./scripts/seed_admins.js:4:import bcrypt from 'bcryptjs';
+./server.js.bak.1105-082047:3:import express from "express";
+./server.js.bak.1105-082047:4:import cors from "cors";
+./server.js.bak.1105-082047:5:import helmet from "helmet";
+./server.js.bak.1105-082047:6:import compression from "compression";
+./server.js.bak.1105-082047:7:import morgan from "morgan";
+./server.js.bak.1105-082047:8:import path from "path";
+./server.js.bak.1105-082047:9:import fs from "fs";
+./server.js.bak.1105-082047:10:import { fileURLToPath } from "url";
+./server.js.bak.1105-082047:11:import mongoose from "mongoose";
