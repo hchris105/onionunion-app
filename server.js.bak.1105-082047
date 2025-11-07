@@ -1,0 +1,175 @@
+// server.js — 精簡穩定版：先建立 app 再掛載路由，含 Mongo 連線、/auth、/ask、/admin、healthz
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
+import morgan from "morgan";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import mongoose from "mongoose";
+
+// 路由與模型（模型匯入=註冊 schema；避免 MissingSchemaError）
+import authRoutes from "./routes/auth.js";
+import adminRoutes from "./routes/admin.js";
+import "./models/User.js";
+import "./models/Payment.js";
+
+// /ask（沿用你的處理器）
+import askHandler, { streamAsk } from "./routes/ask.js";
+
+// ---- 建立 Express（一定要在任何 app.use 之前） ------------------------------
+const app = express();
+app.disable("x-powered-by");
+
+// ---- 通用中介層 --------------------------------------------------------------
+app.use(express.json({ limit: "2mb" }));
+app.use(cors({ origin: true, credentials: true }));
+app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(compression());
+app.use(morgan("combined"));
+
+// ---- 放行 /auth/*（一定要在 Gate 之前） -------------------------------------
+app.use((req, _res, next) => {
+  if (req.path.startsWith("/auth/")) return next();
+  next();
+});
+
+// ---- 嘗試載入 Gate（不存在時自動降級） --------------------------------------
+let gateAsk = (_req, _res, next) => next();
+let consumeTrialIfNeeded = async () => {};
+try {
+  const m = await import("./middleware/access.js");
+  gateAsk = m.gateAsk || gateAsk;
+  consumeTrialIfNeeded = m.consumeTrialIfNeeded || consumeTrialIfNeeded;
+  console.log("[Gate] access middleware enabled");
+} catch {
+  console.log("[Gate] access middleware not found — continue without gating");
+}
+
+// 可選登入中介（沒有也可啟動）
+let requireAuthOptional = (_req, _res, next) => next();
+try {
+  const a = await import("./middleware/auth.js");
+  requireAuthOptional = a.requireAuthOptional || requireAuthOptional;
+} catch { /* ignore */ }
+
+// ---- global safety guards: don't crash the process on request errors ----
+process.on("unhandledRejection", (err) => {
+  console.error("[unhandledRejection]", err?.stack || err);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err?.stack || err);
+});
+
+// ---- 路徑工具 & 靜態檔 -------------------------------------------------------
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+const ROOT       = path.join(__dirname, "public");
+const DATA_DIR   = path.join(__dirname, "data");
+
+if (!fs.existsSync(ROOT)) fs.mkdirSync(ROOT, { recursive: true });
+app.use(express.static(ROOT, {
+  maxAge: "1h",
+  setHeaders(res) { res.setHeader("Cache-Control", "public, max-age=3600"); }
+}));
+
+// ---- 掛載路由 ---------------------------------------------------------------
+app.use("/auth", authRoutes);
+app.use("/admin", adminRoutes);
+
+// 問答 API（非流式）
+app.post("/ask", requireAuthOptional, gateAsk, async (req, res) => {
+  try {
+    await askHandler(req, res, { mode: req._mode });
+    await consumeTrialIfNeeded(req);
+  } catch (e) {
+    console.error("[/ask] error:", e);
+    if (!res.headersSent) res.status(500).json({ ok:false, error:"server_error", detail:String(e?.message||e) });
+  }
+});
+
+// 問答 API（流式，若無 streamAsk 則後備為非流式）
+app.post("/ask/stream", requireAuthOptional, gateAsk, async (req, res) => {
+  try {
+    if (typeof streamAsk === "function") {
+      await streamAsk(req, res, { mode: req._mode });
+    } else {
+      await askHandler(req, res, { mode: req._mode });
+    }
+    await consumeTrialIfNeeded(req);
+  } catch (e) {
+    console.error("[/ask/stream] error:", e);
+    try {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.write(`event: final\ndata: ${JSON.stringify({ ok:false, error:"server_error", detail:String(e?.message||e) })}\n\n`);
+      res.end();
+    } catch { /* ignore */ }
+  }
+});
+
+// （可選）Admin 靜態頁：預設關閉，僅保留結構
+if (process.env.ADMIN_ENABLE === "1") {
+  const ADMIN_ALLOW = new Set(["admin.html", "admin.js", "admin.css"]);
+  app.get("/admin", (_req, res) => res.sendFile(path.join(ROOT, "admin.html")));
+  app.get("/admin/assets/:file", (req, res) => {
+    const f = req.params.file || "";
+    if (!ADMIN_ALLOW.has(f)) return res.status(404).end();
+    res.sendFile(path.join(ROOT, f));
+  });
+
+  const ADMIN_FILE  = path.join(DATA_DIR, "admin.json");
+  const ADMIN_AUDIT = path.join(DATA_DIR, "admin.audit.log");
+  const ADMIN_TOKEN = process.env.ADMIN_TOKEN || null;
+
+  function requireAdmin(req, res, next) {
+    if (!ADMIN_TOKEN) return res.status(403).json({ ok:false, error:"ADMIN_TOKEN not set" });
+    const token = req.headers["x-admin-token"] || req.query.token;
+    if (token !== ADMIN_TOKEN) return res.status(401).json({ ok:false, error:"unauthorized" });
+    next();
+  }
+
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+  app.get("/admin/api/config", requireAdmin, (_req, res) => {
+    try {
+      const text = fs.existsSync(ADMIN_FILE) ? fs.readFileSync(ADMIN_FILE, "utf-8") : "{}";
+      res.json({ ok:true, data: JSON.parse(text) });
+    } catch (e) { res.status(500).json({ ok:false, error:"read_failed", detail:String(e) }); }
+  });
+
+  app.post("/admin/api/config", requireAdmin, express.json({ limit:"1mb" }), (req, res) => {
+    try {
+      fs.writeFileSync(ADMIN_FILE, JSON.stringify(req.body || {}, null, 2));
+      fs.appendFileSync(ADMIN_AUDIT, `${new Date().toISOString()} SET\n`);
+      res.json({ ok:true });
+    } catch (e) { res.status(500).json({ ok:false, error:"write_failed", detail:String(e) }); }
+  });
+
+  console.log("[Server] Admin ENABLED");
+} else {
+  console.log("[Server] Admin DISABLED");
+}
+
+// ---- 健康檢查 & 404 ----------------------------------------------------------
+app.get("/healthz", (_req, res) =>
+  res.json({ ok:true, db: mongoose.connection.readyState === 1 ? "up" : "down", ts: Date.now() })
+);
+app.use((_req, res) => res.status(404).json({ ok:false, error:"not_found" }));
+
+// ---- 連 Mongo & 啟動 ---------------------------------------------------------
+const MONGO = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/onionunion";
+const PORT  = Number(process.env.PORT || 3000);
+
+mongoose.connect(MONGO, { dbName: "onionunion" })
+  .then(() => {
+    console.log("[DB] connected");
+    app.listen(PORT, () => console.log(`[Server] OnionUnion API listening on http://127.0.0.1:${PORT}`));
+  })
+  .catch((e) => {
+    console.error("[DB] connect error:", e?.message || e);
+    process.exit(1);
+  });
+
+export default app;

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OnionUnion · Jafar</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="theme-dark">
+  <!-- Topbar -->
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="OnionUnion · Jafar">
+      <img src="/assets/onionunion.svg" alt="" class="logo" onerror="this.style.display='none'">
+      <div class="brand-text">
+        <strong class="brand-main">OnionUnion</strong><span class="dot">•</span><span class="brand-sub">Jafar</span>
+      </div>
+    </a>
+
+    <div class="toolbar">
+      <!-- 桌面：膠囊按鈕 -->
+      <nav class="mini-links" aria-label="Quick">
+        <a class="btn-pill" href="/pricing"  data-i18n="nav_pricing">定價</a>
+        <a class="btn-pill" href="/services" data-i18n="nav_services">服務</a>
+        <a class="btn-pill" href="/members"  data-i18n="nav_members">會員</a>
+        <a class="btn-pill" href="/privacy"  data-i18n="nav_privacy">隱私</a>
+        <a class="btn-pill" href="/terms"    data-i18n="nav_terms">條款</a>
+      </nav>
+
+      <!-- 行動：下拉選單 -->
+      <select id="quickNav" class="mini-links-mobile select" aria-label="Quick menu">
+        <option value="" data-i18n="nav_more">快速前往…</option>
+        <option value="/pricing"  data-i18n="nav_pricing">定價</option>
+        <option value="/services" data-i18n="nav_services">服務</option>
+        <option value="/members"  data-i18n="nav_members">會員</option>
+        <option value="/privacy"  data-i18n="nav_privacy">隱私</option>
+        <option value="/terms"    data-i18n="nav_terms">條款</option>
+      </select>
+
+      <button id="themeToggle" class="btn-ghost" aria-label="Toggle theme" title="切換明暗">🌓</button>
+      <select id="langSelect" class="select">
+        <option value="zh-Hans">简体中文</option>
+        <option value="zh-Hant">繁體中文</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-badge"><span class="hb-dot"></span><span class="hb-text">Jafar · Insight Guidance</span></div>
+      <h1 class="hero-title" data-i18n="hero_title">諸象歸一，成其一解</h1>
+      <p class="hero-sub" data-i18n="hero_sub">
+        以多徑路由與合成，收攏分散的線索，綴成一份完整而可用的解讀；兼顧節奏與邊界，仍留餘地與回望。
+      </p>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <section class="card">
+      <div class="form-head">
+        <h2 class="form-title" data-i18n="title">提交資料 · 立即生成報告</h2>
+        <p class="muted" data-i18n="subtitle">填好關鍵資訊，系統會自動擇優並融合方法，輸出可執行建議與風險對策。</p>
+      </div>
+
+      <form id="form" class="form" autocomplete="off">
+        <div class="grid-3">
+          <div class="cell">
+            <label><span data-i18n="field_name">姓名</span> <span class="req">*</span></label>
+            <input id="name" type="text" required>
+          </div>
+          <div class="cell">
+            <label><span data-i18n="field_birth">生日</span> <span class="req">*</span></label>
+            <input id="birth" type="date" required>
+          </div>
+          <div class="cell">
+            <label data-i18n="field_mother">母親姓名（可選）</label>
+            <input id="mother" type="text">
+          </div>
+
+          <!-- ✅ 新增：MBTI（可選） -->
+          <div class="cell">
+            <label data-i18n="field_mbti">MBTI（可選）</label>
+            <select id="mbti">
+              <option value="" data-i18n="mbti_unknown">不確定 / 暫不提供</option>
+              <option>ISTJ</option><option>ISFJ</option><option>INFJ</option><option>INTJ</option>
+              <option>ISTP</option><option>ISFP</option><option>INFP</option><option>INTP</option>
+              <option>ESTP</option><option>ESFP</option><option>ENFP</option><option>ENTP</option>
+              <option>ESTJ</option><option>ESFJ</option><option>ENFJ</option><option>ENTJ</option>
+            </select>
+          </div>
+        </div>
+
+        <details id="adv" class="section">
+          <summary><strong data-i18n="advanced">進階條件（可選）</strong></summary>
+          <div class="grid-3">
+            <div class="cell"><label data-i18n="field_target_name">對方姓名（可選）</label><input id="target_name" type="text"></div>
+            <div class="cell"><label data-i18n="field_target_birth">對方生日（可選）</label><input id="target_birth" type="date"></div>
+            <div class="cell"><label data-i18n="field_target_mother">對方母親姓名（可選）</label><input id="target_mother_name" type="text"></div>
+            <div class="cell span-3">
+              <label data-i18n="field_when">參考時間（可選）</label>
+              <input id="timestamp" type="date">
+              <small class="muted" data-i18n="hint_when">不填由系統自定；用於擇時。</small>
+            </div>
+            <div class="cell span-3"><label data-i18n="field_loc">所在地（可選）</label><input id="location" type="text"></div>
+          </div>
+        </details>
+
+        <label data-i18n="field_question">你的問題</label>
+        <textarea id="question" rows="5" required data-i18n-ph="ph_question"></textarea>
+
+        <div class="actions">
+          <button id="submit" type="submit" class="btn" data-i18n="btn_submit">生成報告</button>
+          <button id="reset" type="button" class="btn ghost" data-i18n="btn_reset">清空</button>
+        </div>
+
+        <div id="progress" class="progress" hidden>
+          <div class="bar"><span id="progressBar"></span></div>
+          <div class="progress-text">
+            <span id="progressPct">0%</span> · <span id="progressMsg" data-i18n="p0">初始化…</span>
+          </div>
+        </div>
+
+        <div id="err" class="err" role="alert"></div>
+      </form>
+
+      <article id="result" class="result" hidden>
+        <div class="summary"><h3 data-i18n="summary">結論 · 摘要</h3><div id="summaryText" class="muted"></div></div>
+        <div id="answer" class="body"></div>
+        <div class="actions">
+          <button id="askAnother" class="btn ghost" data-i18n="btn_again">再問一題</button>
+        </div>
+        <p class="legal muted" data-i18n="legal">僅供陪伴與個人見解參考，不構成醫療/法律/投資建議。</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <div class="f-copy">
+        © <span id="y"></span> OnionUnion · 諮詢灰叔 Peace-Love-2012 · 工程師 gagaclol3
+      </div>
+    </div>
+  </footer>
+
+  <!-- 行動下拉跳轉 -->
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+    (function(){
+      var q = document.getElementById('quickNav');
+      if (q) q.addEventListener('change', function(){
+        if (this.value) location.href = this.value;
+      });
+    })();
+  </script>
+
+  <script src="/i18n.js"></script>
+  <script src="/theme.js"></script>
+  <script src="/config.js"></script>
+  <script src="/ui.js"></script>
+</body>
+</html>

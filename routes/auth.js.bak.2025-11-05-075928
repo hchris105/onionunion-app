@@ -1,0 +1,88 @@
+// routes/auth.js — 預約白名單認領（放寬版）＋無 admin token 驗證
+import express from "express";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import User from "../models/User.js";
+
+// 優先使用 bcryptjs（純 JS，不會編譯出錯）
+let bcrypt;
+try { bcrypt = (await import("bcryptjs")).default; }
+catch { bcrypt = (await import("bcrypt")).default; }
+
+const router = express.Router();
+
+function issueToken(u) {
+  const payload = { uid: String(u._id), handle: u.handle, role: u.role || "visitor" };
+  const secret  = process.env.JWT_SECRET || "dev_secret_change_me";
+  return jwt.sign(payload, secret, { expiresIn: "30d" });
+}
+
+// --- 預約白名單「認領註冊」 ---
+router.post("/preorder-register", async (req, res) => {
+  try {
+    const { handle, password, email } = req.body || {};
+    if (!handle || !password) {
+      return res.status(400).json({ ok:false, error:"missing_fields", message:"handle 與 password 必填" });
+    }
+
+    const h = String(handle).trim();
+    const u = await User.findOne({ handle: h });
+
+    if (!u) {
+      return res.status(404).json({ ok:false, error:"not_found", message:"找不到此帳號" });
+    }
+
+    // 放寬條件：白名單 或（未白名單但尚未設定密碼）
+    const whitelisted = (u.preorder === true) || (!u.preorder && !u.password_hash);
+    if (!whitelisted) {
+      return res.status(403).json({ ok:false, error:"not_whitelisted", message:"此帳號未在預約名單中" });
+    }
+
+    // 若已被認領過（已有密碼），就拒絕
+    if (u.password_hash && u.preorder === false) {
+      return res.status(409).json({ ok:false, error:"already_claimed", message:"此帳號已完成註冊" });
+    }
+
+    if (email) {
+      const lower = String(email).toLowerCase();
+      const dup = await User.findOne({ email: lower, _id: { $ne: u._id } });
+      if (dup) return res.status(400).json({ ok:false, error:"email_taken", message:"email 已被使用" });
+      u.email = lower;
+    } else if (!u.email) {
+      u.email = `${u.handle}@placeholder.local`.toLowerCase();
+    }
+
+    u.password_hash = await bcrypt.hash(password, 12);
+    u.preorder = false;               // 完成認領
+    u.role = u.role || "visitor";     // 預設角色
+    u.trial_credits ??= 3;            // 沒值就給 3 次試用
+    await u.save();
+
+    return res.json({ ok:true, token: issueToken(u) });
+  } catch (e) {
+    console.error("[preorder-register] error:", e);
+    return res.status(500).json({ ok:false, error:"server_error", detail:String(e?.message||e) });
+  }
+});
+
+// （可選）公開註冊，預設關閉
+router.post("/register", async (req, res) => {
+  if (process.env.OPEN_REGISTER !== "1") {
+    return res.status(403).json({ ok:false, error:"register_closed", message:"註冊關閉，請使用 /auth/preorder-register" });
+  }
+  const { email, password, handle } = req.body || {};
+  if (!email || !password || !handle) return res.status(400).json({ ok:false, error:"missing_fields" });
+
+  const lower = String(email).toLowerCase();
+  const exists = await User.findOne({ $or: [{ email: lower }, { handle }] });
+  if (exists) return res.status(409).json({ ok:false, error:"conflict" });
+
+  const password_hash = await bcrypt.hash(password, 12);
+  const u = await User.create({ email: lower, handle, password_hash, role:"visitor", trial_credits:3, preorder:false });
+  return res.json({ ok:true, token: issueToken(u) });
+});
+
+// （簡版）/me
+router.get("/me", (_req, res) => res.json({ ok:true, user:null }));
+
+export default router;

@@ -1,0 +1,94 @@
+import express from "express";
+import bcrypt from "bcryptjs";
+import User from "../models/User.js";
+
+const router = express.Router();
+
+// --- Helper: 將輸入帳號標準化（去前後空白、全形空白->半形、大小寫無感比對用 RegExp）
+const normalize = (s) =>
+  (s || "")
+    .replace(/\u3000/g, " ")   // 全形空白 -> 半形
+    .trim();
+
+const escapeRegex = (s) =>
+  s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const findUserByHandle = async (rawHandle) => {
+  const n = normalize(rawHandle);
+  if (!n) return null;
+  // 用不分大小寫的精確比對
+  return await User.findOne({ handle: new RegExp("^" + escapeRegex(n) + "$", "i") });
+};
+
+// --- 認領前檢查 (可選)
+router.post("/preorder-lookup", async (req, res) => {
+  try {
+    const { handle } = req.body || {};
+    const u = await findUserByHandle(handle);
+    if (!u) return res.status(403).json({ ok:false, error:"not_whitelisted", message:"此帳號未在預約名單中" });
+    if (!u.preorder) return res.status(402).json({ ok:false, error:"preorder_disabled", message:"此帳號不在預約狀態" });
+    if (u.password_hash) return res.status(409).json({ ok:false, error:"already_registered", message:"此帳號已完成註冊" });
+    return res.json({ ok:true, handle: u.handle, preorder: !!u.preorder });
+  } catch (e) {
+    console.error("[preorder-lookup] error:", e);
+    return res.status(500).json({ ok:false, error:"server_error" });
+  }
+});
+
+// --- 預約名單註冊
+router.post("/preorder-register", async (req, res) => {
+  try {
+    const { handle, password, email } = req.body || {};
+    const u = await findUserByHandle(handle);
+
+    console.log("[preorder-register] lookup { handle:", handle, " } =>", !!u ? "FOUND" : "NOT FOUND");
+
+    if (!u) {
+      return res.status(403).json({ ok:false, error:"not_whitelisted", message:"此帳號未在預約名單中" });
+    }
+    if (!u.preorder) {
+      return res.status(402).json({ ok:false, error:"preorder_disabled", message:"此帳號不在預約狀態" });
+    }
+    if (u.password_hash) {
+      return res.status(409).json({ ok:false, error:"already_registered", message:"此帳號已完成註冊" });
+    }
+    if (!password || String(password).length < 6) {
+      return res.status(400).json({ ok:false, error:"weak_password", message:"密碼至少 6 碼" });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    u.password_hash = hash;
+    if (email) u.email = email;
+    u.role = "member";
+    u.preorder = false;
+    await u.save();
+
+    return res.json({ ok:true, token: "dummy_token_for_now" });
+  } catch (e) {
+    console.error("[preorder-register] error:", e);
+    return res.status(500).json({ ok:false, error:"server_error" });
+  }
+});
+
+// --- 除錯用：查看看後端實際看到的狀態
+router.get("/_debug/:handle", async (req, res) => {
+  try {
+    const u = await findUserByHandle(req.params.handle);
+    if (!u) return res.json({ ok:false, error:"not_found" });
+    res.json({
+      ok:true,
+      user:{
+        _id: String(u._id),
+        handle: u.handle,
+        preorder: !!u.preorder,
+        has_password_hash: !!u.password_hash,
+        email: u.email || null,
+      }
+    });
+  } catch (e) {
+    console.error("[_debug] error:", e);
+    res.status(500).json({ ok:false, error:"server_error" });
+  }
+});
+
+export default router;

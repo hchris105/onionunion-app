@@ -1,0 +1,14 @@
+{
+  "model": "gpt-5",
+  "api_mode": "responses",
+  "temperature": null,
+  "max_output_tokens": 8000,
+  "auto_continue_rounds": 0,
+  "kb_topk": 0,
+  "use_kb": false,
+  "depth": "deep",
+  "sys_prompt": "",
+  "pre_template": "",
+  "post_template": "",
+  "safety_tail": ""
+}
