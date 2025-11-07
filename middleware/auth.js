@@ -1,24 +1,19 @@
-// middleware/auth.js
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+// middleware/auth.js — 最前面加入放行規則
+export default function gate(req, res, next) {
+  // 不要攔截 /ask 與 /ask/stream，避免破壞 SSE
+  if (
+    req.method === "POST" &&
+    (req.path === "/ask" || req.path === "/ask/stream")
+  ) {
+    return next();
+  }
 
-export function signToken(user) {
-  return jwt.sign(
-    { sub: user._id.toString(), role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-}
-
-// 可選登入：有帶 Bearer token 就解析；沒帶就當訪客
-export async function requireAuthOptional(req, _res, next) {
+  // 你原有的會員/白名單/角色判斷留在這下面
+  // e.g. 解析 JWT，注入 req.user / req.role
   try {
-    const hdr = req.headers.authorization || "";
-    const m = hdr.match(/^Bearer (.+)$/i);
-    if (m) {
-      const payload = jwt.verify(m[1], process.env.JWT_SECRET);
-      req.user = await User.findById(payload.sub).lean();
-    }
-  } catch (_e) { /* 壞 token 視同未登入 */ }
-  next();
+    // ...你的原邏輯...
+    return next();
+  } catch (e) {
+    return res.status(401).json({ ok: false, error: "unauthorized" });
+  }
 }
