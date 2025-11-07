@@ -1,27 +1,26 @@
 // models/User.js
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema(
   {
-    handle: { type: String, required: true, trim: true },      // 僅白名單就可成立
-    email:  { type: String, default: null },                   // 等註冊才填
-    password_hash: { type: String, default: null, select: false }, // 非必填
-    preorder: { type: Boolean, default: false },               // 是否在預約白名單
-    role: { type: String, enum: ["visitor","member","admin"], default: "visitor" },
+    email: { type: String, required: true, unique: true, index: true },
+    handle: { type: String, required: true, unique: true, index: true },
+    name: { type: String },
+
+    // 關鍵欄位
+    status: { type: String, enum: ['preorder', 'active', 'disabled'], default: 'preorder', index: true },
+    password_hash: { type: String, default: null },
+    must_reset_password: { type: Boolean, default: false },
+
+    // 預留（若之後要用）
+    signup_token: { type: String, default: null },
+    signup_expires: { type: Date, default: null },
+    reset_token: { type: String, default: null },
+    reset_expires: { type: Date, default: null },
+
+    registered_at: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
 );
 
-// 索引：handle 不分大小寫唯一
-UserSchema.index(
-  { handle: 1 },
-  { unique: true, collation: { locale: "en", strength: 2 } }
-);
-
-// 索引：email 僅在 email 為 string 時唯一（partial unique）
-UserSchema.index(
-  { email: 1 },
-  { unique: true, partialFilterExpression: { email: { $type: "string" } } }
-);
-
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+export default mongoose.model('User', UserSchema);
