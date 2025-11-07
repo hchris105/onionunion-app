@@ -1,17 +1,22 @@
-# Node
+# Node / builds / logs
 node_modules/
 dist/
 logs/
 *.log
 .npm/
+
 # Local env
 .env
 .env.*
-# Local data/backup (不進版控)
+
+# Local data & backups（不要進版控）
 backup/
 data/
-# OS/editor junk
+
+# editor junk / backups
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*.bak
+*.bak.*
