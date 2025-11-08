@@ -2,11 +2,103 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OnionUnion Admin</title>
+  <link rel="icon" href="/favicon.svg" />
+  <style>
+    body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif;padding:16px;}
+    .card{border:1px solid #ddd;border-radius:10px;padding:16px;margin:12px 0;}
+    label{display:block;color:#444;margin:6px 0 4px}
+    input,textarea,select,button{padding:8px;border:1px solid #ccc;border-radius:8px;}
+    input,select,button{height:36px}
+    input,select,button,textarea{width:100%}
+    .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .toolbar{display:flex;gap:8px;margin-top:8px}
+    .ok{color:#0a7}
+    .err{color:#d33}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+    .right{display:flex;justify-content:flex-end;gap:8px}
+  </style>
 </head>
 <body>
-  <h1>OnionUnion Admin</h1>
-  <p>這是暫時的管理首頁。之後可加：白名單匯入、單筆新增、管理員登入等。</p>
+  <h1>🧅 OnionUnion Admin</h1>
+
+  <div class="card">
+    <label>Admin Token</label>
+    <div class="row2">
+      <input id="token" placeholder="X-Admin-Token" />
+      <button id="btn_stats">讀取統計</button>
+    </div>
+    <div id="stats" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <h3>新增預約（單筆）</h3>
+    <div class="row">
+      <div>
+        <label>Handle（帳號，將轉小寫）</label>
+        <input id="add_handle" placeholder="例如: aloha42" />
+      </div>
+      <div>
+        <label>微信號（可空）</label>
+        <input id="add_wechat" placeholder="例如: Aloha_zmshs" />
+      </div>
+      <div>
+        <label>Email（可空）</label>
+        <input id="add_email" placeholder="email@example.com" />
+      </div>
+    </div>
+    <div class="right">
+      <button id="btn_add">新增</button>
+    </div>
+    <div id="add_msg"></div>
+  </div>
+
+  <div class="card">
+    <h3>批量新增（每行：handle,wechat,email）</h3>
+    <textarea id="bulk_text" rows="6" placeholder="shen,shen_wx,shen@example.com&#10;violet,violet123,"></textarea>
+    <div class="right">
+      <button id="btn_bulk">匯入</button>
+    </div>
+    <div id="bulk_msg"></div>
+  </div>
+
+  <div class="card">
+    <h3>快速搜尋 / 分頁列表</h3>
+    <div class="row">
+      <input id="q" placeholder="handle / wechat / email" />
+      <select id="q_status">
+        <option value="">全部</option>
+        <option value="preorder">preorder</option>
+        <option value="active">active</option>
+      </select>
+      <select id="q_limit">
+        <option>20</option><option selected>50</option><option>100</option>
+      </select>
+    </div>
+    <div class="right" style="margin-top:8px">
+      <button id="btn_search">搜尋</button>
+    </div>
+    <div id="list_wrap"></div>
+  </div>
+
+  <div class="card">
+    <h3>測試：啟用 / 重設密碼 / Login 檢查</h3>
+    <div class="row">
+      <input id="test_id" placeholder="handle / wechat / email" />
+      <input id="test_pass" placeholder="新密碼（重設用，可空）" value="New@12345" />
+      <div class="toolbar">
+        <button id="btn_activate">啟用成員（改為 active）</button>
+        <button id="btn_reset">重設密碼</button>
+        <button id="btn_login_check">Login 檢查</button>
+      </div>
+    </div>
+    <div id="test_msg" style="margin-top:8px"></div>
+  </div>
+
+  <!-- 只引入外部 JS（避免 inline 被 CSP 擋） -->
+  <script src="/admin/admin.js"></script>
 </body>
 </html>
