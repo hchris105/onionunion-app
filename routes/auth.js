@@ -1,186 +1,174 @@
-// routes/auth.js — OnionUnion Auth (whitelist + claim + login)
+// routes/auth.js  — OnionUnion Auth Routes (ESM)
 import express from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import mongoose from "mongoose";
 
-// 若專案內沒有 gate，可刪除下行三個 import 並把對應程式碼註解
-import { isOpen, openGate, closeGate } from "../lib/gate.js";
-
+const DEBUG = ["1", "true", "yes"].includes(String(process.env.DEBUG_AUTH || "").toLowerCase());
 const router = express.Router();
 
-const ADMIN_TOKEN   = process.env.ADMIN_TOKEN   || "";
-const JWT_SECRET    = process.env.JWT_SECRET    || "dev_secret_change_me";
-const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS || 12);
-
-// -------- Helpers --------
-function requireAdmin(req, res, next) {
-  const t = req.get("X-Admin-Token") || "";
-  if (!t || t !== ADMIN_TOKEN) {
-    return res.status(401).json({ ok: false, error: "unauthorized" });
-  }
-  next();
+// ---- User model（若外部已定義則重用）----
+let User;
+try {
+  User = mongoose.model("User");
+} catch {
+  const userSchema = new mongoose.Schema(
+    {
+      handle: { type: String, index: true },           // 洋蔥聯盟帳號（必填）
+      email:  { type: String, index: true, sparse: true },
+      wechat_id: { type: String, index: true, sparse: true },
+      status: { type: String, default: "preorder", index: true }, // preorder | active | disabled
+      password_hash: { type: String },
+      roles: { type: [String], default: [] },
+      meta: { type: Object, default: {} },
+    },
+    { collection: "users", timestamps: true }
+  );
+  // 僅 handle 做唯一性，email/wechat 允許缺省（sparse）
+  userSchema.index({ handle: 1 }, { unique: true });
+  userSchema.index({ email: 1 }, { unique: true, sparse: true });
+  userSchema.index({ wechat_id: 1 }, { unique: true, sparse: true });
+  User = mongoose.model("User", userSchema);
 }
 
-function normStr(v) {
-  return String(v || "").trim();
-}
+// 工具：產生不分大小寫、整字匹配的正則
+const iEq = (v) => ({ $regex: new RegExp(`^${String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") });
 
-function normLower(v) {
-  return normStr(v).toLowerCase();
-}
+// 工具：從 identifier（handle / email / wechat）組合查詢
+const buildIdentifierQuery = (identifier) => {
+  const ident = String(identifier || "").trim();
+  if (!ident) return null;
 
-// -------- Admin APIs --------
+  const ors = [
+    { handle: iEq(ident) },
+    { wechat_id: iEq(ident) },
+  ];
+  // 簡單判別 email
+  if (ident.includes("@")) ors.push({ email: iEq(ident) });
 
-// 單筆新增白名單（可從後台或小工具呼叫）
-router.post("/admin/add-preorder", requireAdmin, async (req, res) => {
-  try {
-    const { handle, email, wechat, name } = req.body || {};
-    const h = normLower(handle);
-    if (!h) return res.status(400).json({ ok: false, error: "handle_required" });
+  return { $or: ors };
+};
 
-    // email/wechat 選填
-    const doc = {
-      handle: h,
-      status: "preorder",
-      password_hash: null,
-      must_reset_password: false,
-      name: name || null,
-    };
-    if (email)  doc.email = normLower(email);
-    if (wechat) doc.wechat_id = normStr(wechat);
-
-    await User.updateOne(
-      { handle: h },
-      { $setOnInsert: { created_at: new Date() }, $set: doc },
-      { upsert: true }
-    );
-
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error("[Admin.add-preorder] error:", err);
-    return res.status(500).json({ ok: false, error: "server_error" });
-  }
-});
-
-// 開/關白名單註冊門（可選，專案若無 gate 可刪除）
-router.post("/admin/preorder-register-open",  requireAdmin, (_req, res) => { openGate();  res.json({ ok: true, open: isOpen() }); });
-router.post("/admin/preorder-register-close", requireAdmin, (_req, res) => { closeGate(); res.json({ ok: true, open: isOpen() }); });
-
-// -------- Public APIs --------
-
-// 白名單預檢：前端只送 handle，回傳是否存在與是否已認領
+// ---------- 1) 查預約/使用狀態 ----------
 router.post("/preorder-lookup", async (req, res) => {
   try {
     const { handle } = req.body || {};
-    const h = normLower(handle);
-    if (!h) return res.status(400).json({ ok: false, error: "handle_required" });
+    if (!handle) return res.status(400).json({ ok: false, error: "missing_handle" });
 
-    const u = await User.findOne({ handle: h }, { _id: 1, status: 1 }).lean();
-    if (!u) return res.json({ ok: true, exists: false });
+    const user = await User.findOne({ handle: iEq(handle) })
+      .select({ handle: 1, status: 1, password_hash: 1 })
+      .lean();
 
-    return res.json({ ok: true, exists: true, claimed: u.status === "active" });
-  } catch (err) {
-    console.error("[preorder-lookup] error:", err);
-    return res.status(500).json({ ok: false, error: "server_error" });
+    if (!user) return res.json({ ok: true, exists: false });
+
+    const claimed = Boolean(user.password_hash);
+    return res.json({
+      ok: true,
+      exists: true,
+      claimed,
+      status: user.status || "preorder",
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: "server_error", detail: String(e?.message || e) });
   }
 });
 
-// 認領帳號（以微信號驗證 + 設定新密碼）
-// body: { handle, wechat, new_password }
+// ---------- 2) 認領帳號（預約 → 設定密碼 / 綁定微信） ----------
 router.post("/claim", async (req, res) => {
   try {
     const { handle, wechat, new_password } = req.body || {};
-    const h   = normLower(handle);
-    const wx  = normStr(wechat);
-    const pwd = normStr(new_password);
-
-    if (!h || !wx || !pwd) {
-      return res.status(400).json({ ok: false, error: "missing_fields" });
+    if (!handle || !new_password) {
+      return res.status(400).json({ ok: false, error: "missing_params" });
     }
 
-    // 若你想限制在門開啟時才能認領，取消下行註解：
-    // if (!isOpen()) return res.status(403).json({ ok: false, error: "register_closed" });
+    const user = await User.findOne({ handle: iEq(handle) }).lean();
+    if (!user) return res.status(404).json({ ok: false, error: "not_found" });
 
-    const u = await User.findOne({ handle: h }).lean();
-    if (!u) return res.json({ ok: false, error: "not_found" });
-
-    if (u.status === "active") return res.json({ ok: true, already: true });
-
-    // 需是白名單 + 需有對應微信號
-    if (u.status !== "preorder") return res.json({ ok: false, error: "not_in_whitelist" });
-
-    const bindWx = normStr(u.wechat_id || "");
-    if (!bindWx || bindWx !== wx) {
-      return res.json({ ok: false, error: "wechat_mismatch" });
+    // 允許兩種情況進行認領：
+    // A) 預約帳號（preorder）
+    // B) 已 active 但尚未設密碼（password_hash 不存在）
+    if (!["preorder", "active"].includes(user.status || "preorder")) {
+      return res.status(400).json({ ok: false, error: "invalid_status" });
+    }
+    if (user.status === "active" && user.password_hash) {
+      return res.status(409).json({ ok: false, error: "already_claimed" });
     }
 
-    const password_hash = await bcrypt.hash(pwd, BCRYPT_ROUNDS);
-    await User.updateOne(
-      { _id: u._id },
-      {
-        $set: {
-          password_hash,
-          status: "active",
-          must_reset_password: false,
-          registered_at: new Date(),
-        },
-      }
-    );
+    const rounds = Number(process.env.BCRYPT_ROUNDS || 12);
+    const password_hash = await bcrypt.hash(String(new_password), rounds);
 
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error("[claim] error:", err);
-    return res.status(500).json({ ok: false, error: "server_error" });
+    const set = { password_hash, status: "active" };
+    if (wechat) set.wechat_id = String(wechat).trim();
+
+    const updated = await User.findOneAndUpdate(
+      { handle: iEq(handle) },
+      { $set: set },
+      { new: true }
+    ).select({ handle: 1, status: 1, wechat_id: 1 }).lean();
+
+    if (!updated) return res.status(500).json({ ok: false, error: "update_failed" });
+
+    return res.json({ ok: true, handle: updated.handle, status: updated.status, wechat_id: updated.wechat_id || null });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: "server_error", detail: String(e?.message || e) });
   }
 });
 
-// 登入：同時支援 handle 或 email，僅允許 active 帳號
-// body: { identifier | handle | email, password }
+// ---------- 3) 登入 ----------
 router.post("/login", async (req, res) => {
   try {
-    let { identifier, handle, email, password } = req.body || {};
-    if (!identifier && handle) identifier = handle;
-    if (!identifier && email)  identifier = email;
+    const { identifier, password } = req.body || {};
+    if (!identifier || !password) return res.status(400).json({ ok: false, error: "missing_params" });
 
-    const id = normStr(identifier);
-    const pwd = normStr(password);
-    if (!id || !pwd) return res.status(400).json({ ok: false, error: "missing_fields" });
+    const query = buildIdentifierQuery(identifier);
+    if (!query) return res.status(400).json({ ok: false, error: "invalid_identifier" });
 
-    const isEmail = id.includes("@");
-    const query = isEmail ? { email: normLower(id) } : { handle: normLower(id) };
+    const user = await User.findOne(query).select({ handle: 1, status: 1, password_hash: 1, wechat_id: 1 }).lean();
 
-    const u = await User.findOne({ ...query, status: "active" }).lean();
-    if (!u || !u.password_hash) return res.json({ ok: false, error: "not_found" });
+    if (DEBUG) console.log("[Auth] login query=", JSON.stringify(query), "found=", !!user);
 
-    const ok = await bcrypt.compare(pwd, u.password_hash);
-    if (!ok) return res.json({ ok: false, error: "bad_password" });
+    if (!user) return res.status(404).json({ ok: false, error: "not_found" });
+    if (user.status === "disabled") return res.status(403).json({ ok: false, error: "disabled" });
+    if (!user.password_hash) return res.status(409).json({ ok: false, error: "not_claimed" });
 
-    const token = jwt.sign(
-      { uid: String(u._id), handle: u.handle, roles: u.roles || [] },
-      JWT_SECRET,
-      { expiresIn: "30d" }
-    );
+    const ok = await bcrypt.compare(String(password), user.password_hash);
+    if (!ok) return res.status(401).json({ ok: false, error: "bad_password" });
 
-    return res.json({ ok: true, token, handle: u.handle });
-  } catch (err) {
-    console.error("[login] error:", err);
-    return res.status(500).json({ ok: false, error: "server_error" });
+    return res.json({ ok: true, handle: user.handle, status: user.status, wechat_id: user.wechat_id || null });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: "server_error", detail: String(e?.message || e) });
   }
 });
 
-// 除錯：查某 handle 的重要欄位
-router.get("/_debug/:handle", async (req, res) => {
+// ---------- 4) 調試：直接看資料 ----------
+router.get("/_debug/:identifier", async (req, res) => {
   try {
-    const h = normLower(req.params.handle);
-    const u = await User.findOne(
-      { handle: h },
-      { handle: 1, status: 1, wechat_id: 1, email: 1, password_hash: 1 }
-    ).lean();
-    if (!u) return res.status(404).json({ ok: false, error: "not_found" });
-    return res.json({ ok: true, user: u });
-  } catch (err) {
-    return res.status(500).json({ ok: false, error: "server_error" });
+    if (!DEBUG) return res.status(404).json({ ok: false, error: "debug_off" });
+
+    const { identifier } = req.params || {};
+    const query = buildIdentifierQuery(identifier);
+    const user = query
+      ? await User.findOne(query).select({ handle: 1, status: 1, password_hash: 1, wechat_id: 1 }).lean()
+      : null;
+
+    return res.json({ ok: Boolean(user), query, user: user || null });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: "server_error", detail: String(e?.message || e) });
+  }
+});
+
+// ---------- 5) 調試：login 查詢條件回傳 ----------
+router.post("/_debug/login-check", async (req, res) => {
+  try {
+    if (!DEBUG) return res.status(404).json({ ok: false, error: "debug_off" });
+
+    const { identifier } = req.body || {};
+    const query = buildIdentifierQuery(identifier);
+    if (!query) return res.json({ ok: false, error: "invalid_identifier" });
+
+    const user = await User.findOne(query).select({ handle: 1, status: 1, password_hash: 1, wechat_id: 1 }).lean();
+    return res.json({ ok: true, query, found: Boolean(user), user: user || null });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: "server_error", detail: String(e?.message || e) });
   }
 });
 

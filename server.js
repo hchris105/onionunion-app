@@ -1,5 +1,6 @@
-// server.js — 穩定版：根目錄與 /admin 靜態頁、/auth 先掛、Gate 可選、/ask fallback、健康檢查
-// ESM 版本（package.json 需是 "type": "module"）
+// server.js — 穩定版（ESM）
+// 依賴：express, dotenv, cors, helmet, compression, morgan, mongoose, path, fs
+// 需要在 package.json 設定 { "type": "module" }
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -23,6 +24,7 @@ const PORT = Number(process.env.PORT || 3000);
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/onionunion";
 const ADMIN_ENABLE = ["1", "true", "yes"].includes(String(process.env.ADMIN_ENABLE || "").toLowerCase());
 const OPEN_REGISTER = ["1", "true", "yes"].includes(String(process.env.OPEN_REGISTER || "").toLowerCase());
+const DISABLE_ADMIN = ["1", "true", "yes"].includes(String(process.env.DISABLE_ADMIN || "").toLowerCase());
 
 // ---- 預載 Model（避免 MissingSchemaError）----
 try {
@@ -34,13 +36,14 @@ try {
 // ---- 建立 App（注意順序！）----
 const app = express();
 app.disable("x-powered-by");
+app.set("trust proxy", true);
 
 // 安全/壓縮/日誌/跨域/解析
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(compression());
-app.use(cors());
+app.use(cors()); // 若需限制來源可改成 cors({ origin: [...] })
 app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 app.use(morgan("combined"));
 
 // ---- 健康檢查（永遠開）----
@@ -49,9 +52,24 @@ app.get("/healthz", (_req, res) => {
   res.json({ ok: true, db, ts: Date.now() });
 });
 
-// ---- /auth 先掛（不經 Gate）----
-import authRoutes from "./routes/auth.js";
-app.use("/auth", authRoutes);
+// ---- /auth：先掛登入/註冊等（你原本的 routes/auth.js）----
+try {
+  const authRoutes = (await import("./routes/auth.js"))?.default;
+  if (authRoutes) app.use("/auth", authRoutes);
+} catch (e) {
+  console.warn("[Auth] routes/auth.js not found – skipped");
+}
+
+// ---- /auth 認領：自助 claim（routes/claim.js）----
+try {
+  const claimRoutes = (await import("./routes/claim.js"))?.default;
+  if (claimRoutes) {
+    app.use("/auth", claimRoutes);
+    console.log("[Claim] mounted /auth/preorder-lookup & /auth/claim");
+  }
+} catch (e) {
+  console.warn("[Claim] routes/claim.js not found – skipped");
+}
 
 // ---- Gate（可選；若沒有 middleware/auth.js 就跳過）----
 let gateLoaded = false;
@@ -63,7 +81,7 @@ try {
     gateLoaded = true;
     console.log("[Gate] access middleware enabled");
   } else {
-    console.log("[Gate] access middleware not found – continue without gating");
+    console.log("[Gate] access middleware not a function – continue without gating");
   }
 } catch {
   console.log("[Gate] access middleware not found – continue without gating");
@@ -75,27 +93,27 @@ try {
   const askHandler = askMod?.askHandler || askMod?.default || askMod;
   if (typeof askHandler === "function" || askHandler?.stack) {
     app.use("/ask", askHandler);
+    console.log("[Ask] route mounted");
   } else {
     app.post("/ask", (_req, res) =>
-      res.json({ ok: true, used_model: "fake", answer: "【離線測試回覆】" })
+      res.json({ ok: true, used_model: "fake", answer: "【離線測試回覆】ask handler not found" })
     );
     console.warn("[Ask] ask.js export 非預期，已掛載假回覆（僅測試）");
   }
-  console.log("[Ask] route mounted");
 } catch {
   app.post("/ask", (_req, res) =>
-    res.json({ ok: true, used_model: "fake", answer: "【離線測試回覆】" })
+    res.json({ ok: true, used_model: "fake", answer: "【離線測試回覆】routes/ask.js not found" })
   );
   console.warn("[Ask] routes/ask.js not found – mounted fake /ask for test");
 }
 
 // ---- 靜態頁：/admin 與根目錄 / ----
 const ADMIN_DIR = path.join(__dirname, "public", "admin");
-if (fs.existsSync(ADMIN_DIR)) {
+if (!DISABLE_ADMIN && fs.existsSync(ADMIN_DIR)) {
   app.use("/admin", express.static(ADMIN_DIR, { index: "index.html", extensions: ["html"] }));
   console.log("[Admin-Static] serving", ADMIN_DIR);
 } else {
-  console.log("[Admin-Static] public/admin/ not found – skip");
+  console.log("[Admin-Static] skipped (DISABLE_ADMIN=1 或 public/admin/ 不存在)");
 }
 
 const PUBLIC_DIR = path.join(__dirname, "public");
@@ -108,7 +126,7 @@ if (fs.existsSync(path.join(PUBLIC_DIR, "index.html"))) {
 }
 
 // ---- （可選）/admin API：建議掛 /admin/api 以免與靜態頁衝突 ----
-if (ADMIN_ENABLE) {
+if (!DISABLE_ADMIN && ADMIN_ENABLE) {
   try {
     const adminRoutes = (await import("./routes/admin.js"))?.default;
     if (adminRoutes) {
@@ -121,7 +139,7 @@ if (ADMIN_ENABLE) {
     console.log("[Admin-API] routes/admin.js not found – skipped");
   }
 } else {
-  console.log("[Admin] DISABLED");
+  console.log("[Admin] API disabled (ADMIN_ENABLE=0 或 DISABLE_ADMIN=1)");
 }
 
 // ---- 404（最後）----
@@ -136,7 +154,7 @@ async function connectDB() {
     console.log("[DB] connected");
   } catch (e) {
     console.error("[DB] connect error:", e?.message || e);
-    // 不阻擋啟動；/healthz 仍可回應；Mongoose 會自動重試
+    // 不阻擋啟動；/healthz 仍可回應；Mongoose 會自行重試
   }
 }
 await connectDB();
