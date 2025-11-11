@@ -1,104 +1,133 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
   <title>OnionUnion Admin</title>
-  <link rel="icon" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif;padding:16px;}
-    .card{border:1px solid #ddd;border-radius:10px;padding:16px;margin:12px 0;}
-    label{display:block;color:#444;margin:6px 0 4px}
-    input,textarea,select,button{padding:8px;border:1px solid #ccc;border-radius:8px;}
-    input,select,button{height:36px}
-    input,select,button,textarea{width:100%}
-    .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .toolbar{display:flex;gap:8px;margin-top:8px}
-    .ok{color:#0a7}
-    .err{color:#d33}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
-    .right{display:flex;justify-content:flex-end;gap:8px}
+    :root { --bg:#0b0f14; --fg:#d8dee9; --muted:#91a0b0; --accent:#7aa2f7; --danger:#ff6b6b; --card:#11161e; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.4 system-ui,Segoe UI,Arial; }
+    header { padding:12px 16px; border-bottom:1px solid #1b2230; display:flex; gap:8px; align-items:center; position:sticky; top:0; background:var(--bg); z-index:10; }
+    input, select, button { background:#0f141b; color:var(--fg); border:1px solid #243046; padding:8px 10px; border-radius:8px; }
+    button.primary { background:var(--accent); color:#0b0f14; border:0; }
+    button.ghost { background:transparent; border:1px solid #243046; }
+    main { display:grid; grid-template-columns: 1fr 380px; gap:0; height: calc(100vh - 58px); }
+    .table { overflow:auto; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:10px 12px; border-bottom:1px solid #1b2230; white-space:nowrap; }
+    th { position:sticky; top:0; background:var(--card); }
+    tr:hover { background:#0f141b; }
+    .badge { padding:2px 8px; border-radius:999px; background:#182235; color:#7aa2f7; font-size:12px; }
+    .muted { color:var(--muted); }
+    .side { border-left:1px solid #1b2230; background:var(--card); padding:16px; overflow:auto; }
+    .row { display:flex; gap:8px; align-items:center; }
+    .field { margin:10px 0; display:flex; flex-direction:column; gap:6px; }
+    .field input, .field select { width:100%; }
+    .footer { display:flex; gap:8px; padding:10px 12px; border-top:1px solid #1b2230; align-items:center; position:sticky; bottom:0; background:var(--bg); }
+    .sp { flex:1; }
+    a.link { color: var(--fg); text-decoration: none; }
+    a.link:hover { text-decoration: underline; }
+    .tiny { font-size:12px; }
+    .token { padding:4px 8px; border:1px dashed #394862; border-radius:8px; }
+    #errbox { position: fixed; right: 12px; bottom: 12px; background: #220f14; color:#ffd2d2; border:1px solid #7a2f3a; border-radius:10px; padding:10px 12px; max-width: 60vw; display:none; z-index:9999;}
+    #errbox pre { white-space: pre-wrap; margin:6px 0 0 0; font:12px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
+    .danger { background: var(--danger); color:#fff; border:0; }
   </style>
 </head>
 <body>
-  <h1>🧅 OnionUnion Admin</h1>
+  <header>
+    <strong>OnionUnion Admin</strong>
+    <input id="q" placeholder="搜尋 handle / 暱稱 / email / wechat" />
+    <select id="f-status" title="狀態">
+      <option value="">全部狀態</option>
+      <option value="preorder">preorder</option>
+      <option value="active">active</option>
+      <option value="disabled">disabled</option>
+      <option value="suspended">suspended</option>
+      <option value="deleted">deleted</option>
+    </select>
+    <select id="f-role" title="角色">
+      <option value="">全部角色</option>
+      <option value="member">member</option>
+      <option value="vip">vip</option>
+      <option value="admin">admin</option>
+    </select>
+    <select id="f-sort" title="排序">
+      <option value="-createdAt">新→舊</option>
+      <option value="createdAt">舊→新</option>
+      <option value="-last_login_at">最近登入</option>
+      <option value="handle">handle A→Z</option>
+      <option value="-handle">handle Z→A</option>
+    </select>
+    <button class="primary" id="btn-reload">重新整理</button>
+    <button class="ghost" id="btn-new">新增預約</button>
+    <input type="file" id="csv" accept=".csv" style="display:none">
+    <button class="ghost" id="btn-import">匯入 CSV</button>
+    <div class="sp"></div>
+    <span class="tiny muted">Admin Token：</span>
+    <span id="token-view" class="tiny token"></span>
+    <button class="ghost tiny" id="btn-token">設定</button>
+  </header>
 
-  <div class="card">
-    <label>Admin Token</label>
-    <div class="row2">
-      <input id="token" placeholder="X-Admin-Token" />
-      <button id="btn_stats">讀取統計</button>
-    </div>
-    <div id="stats" style="margin-top:8px"></div>
-  </div>
-
-  <div class="card">
-    <h3>新增預約（單筆）</h3>
-    <div class="row">
-      <div>
-        <label>Handle（帳號，將轉小寫）</label>
-        <input id="add_handle" placeholder="例如: aloha42" />
+  <main>
+    <section class="table">
+      <table id="grid">
+        <thead>
+          <tr>
+            <th>handle</th>
+            <th>暱稱</th>
+            <th>email</th>
+            <th>wechat</th>
+            <th>狀態</th>
+            <th>角色</th>
+            <th class="muted">最近登入</th>
+            <th class="muted">建立</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="footer">
+        <span id="total" class="muted"></span>
+        <div class="sp"></div>
+        <button id="prev">上一頁</button>
+        <span id="page" class="muted"></span>
+        <button id="next">下一頁</button>
+        <select id="limit" title="每頁筆數">
+          <option>20</option><option>50</option><option>100</option>
+        </select>
       </div>
-      <div>
-        <label>微信號（可空）</label>
-        <input id="add_wechat" placeholder="例如: Aloha_zmshs" />
+    </section>
+
+    <aside class="side" id="editor" hidden>
+      <h3 id="ed-title" class="row">編輯用戶</h3>
+      <div class="field"><label>帳號（handle）</label><input id="ed-handle" autocomplete="off"></div>
+      <div class="field"><label>暱稱</label><input id="ed-nickname" autocomplete="off"></div>
+      <div class="field"><label>Email</label><input id="ed-email" type="email" autocomplete="off"></div>
+      <div class="field"><label>Wechat</label><input id="ed-wechat" autocomplete="off"></div>
+      <div class="field"><label>狀態</label>
+        <select id="ed-status">
+          <option value="preorder">preorder</option>
+          <option value="active">active</option>
+          <option value="disabled">disabled</option>
+          <option value="suspended">suspended</option>
+          <option value="deleted">deleted</option>
+        </select>
       </div>
-      <div>
-        <label>Email（可空）</label>
-        <input id="add_email" placeholder="email@example.com" />
+      <div class="field"><label>角色（逗號分隔）</label><input id="ed-roles" placeholder="member,vip"></div>
+      <div class="field"><label>重設密碼（留空則不變）</label><input id="ed-pass" placeholder="至少 8 字元" autocomplete="new-password"></div>
+
+      <div class="row" style="gap:8px;margin-top:12px;">
+        <button class="primary" id="ed-save">儲存</button>
+        <button class="danger" id="ed-delete">刪除</button>
+        <button id="ed-cancel">取消</button>
       </div>
-    </div>
-    <div class="right">
-      <button id="btn_add">新增</button>
-    </div>
-    <div id="add_msg"></div>
-  </div>
+      <p class="muted tiny" id="ed-meta"></p>
+    </aside>
+  </main>
 
-  <div class="card">
-    <h3>批量新增（每行：handle,wechat,email）</h3>
-    <textarea id="bulk_text" rows="6" placeholder="shen,shen_wx,shen@example.com&#10;violet,violet123,"></textarea>
-    <div class="right">
-      <button id="btn_bulk">匯入</button>
-    </div>
-    <div id="bulk_msg"></div>
-  </div>
+  <div id="errbox"><b>Admin 發生錯誤</b><pre id="errmsg"></pre></div>
 
-  <div class="card">
-    <h3>快速搜尋 / 分頁列表</h3>
-    <div class="row">
-      <input id="q" placeholder="handle / wechat / email" />
-      <select id="q_status">
-        <option value="">全部</option>
-        <option value="preorder">preorder</option>
-        <option value="active">active</option>
-      </select>
-      <select id="q_limit">
-        <option>20</option><option selected>50</option><option>100</option>
-      </select>
-    </div>
-    <div class="right" style="margin-top:8px">
-      <button id="btn_search">搜尋</button>
-    </div>
-    <div id="list_wrap"></div>
-  </div>
-
-  <div class="card">
-    <h3>測試：啟用 / 重設密碼 / Login 檢查</h3>
-    <div class="row">
-      <input id="test_id" placeholder="handle / wechat / email" />
-      <input id="test_pass" placeholder="新密碼（重設用，可空）" value="New@12345" />
-      <div class="toolbar">
-        <button id="btn_activate">啟用成員（改為 active）</button>
-        <button id="btn_reset">重設密碼</button>
-        <button id="btn_login_check">Login 檢查</button>
-      </div>
-    </div>
-    <div id="test_msg" style="margin-top:8px"></div>
-  </div>
-
-  <!-- 只引入外部 JS（避免 inline 被 CSP 擋） -->
-  <script src="/admin/admin.js"></script>
+  <script src="/admin/admin.js" defer></script>
 </body>
 </html>

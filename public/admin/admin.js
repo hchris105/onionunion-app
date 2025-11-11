@@ -1,161 +1,143 @@
+// public/admin/admin.js
 (() => {
-  const $ = (id) => document.getElementById(id);
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const qs = (obj) => new URLSearchParams(obj).toString();
 
-  function tokenHeader() {
-    const t = $('token').value.trim();
-    return {
-      'Content-Type': 'application/json',
-      'X-Admin-Token': t,
-    };
+  const state = {
+    token: localStorage.getItem("ou_admin_token") || "",
+    page: 1,
+    limit: 20,
+    q: "",
+    status: "all",
+    role: "all",
+    items: [],
+    total: 0,
+  };
+
+  const el = {
+    token: $("#admin-token-input") || { value: "" },
+    btnApply: $("#btn-apply-token"),
+    tableBody: $("#tbl-body"),
+    pagerPrev: $("#btn-prev"),
+    pagerNext: $("#btn-next"),
+    selLimit: $("#sel-limit"),
+    selStatus: $("#sel-status"),
+    selRole: $("#sel-role"),
+    txtSearch: $("#txt-search"),
+    btnSearch: $("#btn-search"),
+    btnReload: $("#btn-reload"),
+  };
+
+  if (el.token) el.token.value = state.token;
+
+  function headers() {
+    const h = { "Content-Type": "application/json" };
+    if (state.token) h["X-Admin-Token"] = state.token;
+    return h;
   }
 
-  async function api(path, body, method = 'POST') {
-    const res = await fetch(`/admin/api${path}`, {
-      method,
-      headers: tokenHeader(),
-      body: body ? JSON.stringify(body) : undefined,
+  async function listUsers() {
+    const url = `/admin/api/users?${qs({
+      q: state.q, status: state.status, role: state.role,
+      page: state.page, limit: state.limit,
+      sort: "createdAt", order: "desc",
+    })}`;
+    const r = await fetch(url, { headers: headers() });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) {
+      el.tableBody.innerHTML =
+        `<tr><td colspan="8" style="color:#f88">Error: ${j.error || r.status}</td></tr>`;
+      return;
+    }
+    state.items = j.items || [];
+    state.total = j.total || 0;
+    renderTable();
+  }
+
+  function renderTable() {
+    if (!state.items.length) {
+      el.tableBody.innerHTML = `<tr><td colspan="8" style="opacity:.7">（沒有資料）</td></tr>`;
+      return;
+    }
+    el.tableBody.innerHTML = state.items.map(u => {
+      const wechat = u.wechat_id || "-";
+      const nickname = u.nickname || "-";
+      const role = (u.roles || []).join(", ") || "-";
+      const status = u.status || "-";
+      const created = u.createdAt ? new Date(u.createdAt).toLocaleString() : "-";
+      return `
+        <tr data-id="${u._id}">
+          <td class="cell-handle">${u.handle || "-"}</td>
+          <td>${nickname}</td>
+          <td>${u.email || "-"}</td>
+          <td>${wechat}</td>
+          <td><span class="badge">${status}</span></td>
+          <td>${role}</td>
+          <td>${created}</td>
+          <td><button class="btn-edit" data-id="${u._id}">編輯</button></td>
+        </tr>`;
+    }).join("");
+
+    $$(".btn-edit").forEach(b => b.addEventListener("click", e => openEditor(e.target.dataset.id)));
+  }
+
+  async function openEditor(id) {
+    const r = await fetch(`/admin/api/users/${id}`, { headers: headers() });
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) return toast(`取得資料失敗：${j.error || r.status}`);
+    const u = j.item;
+
+    const nickname = prompt("暱稱（可留空）", u.nickname || "");
+    if (nickname === null) return;
+
+    const r2 = await fetch(`/admin/api/users/${u._id}`, {
+      method: "PATCH",
+      headers: headers(),
+      body: JSON.stringify({ nickname }),
     });
-    return res.json();
+    const j2 = await r2.json().catch(() => ({}));
+    if (!j2.ok) return toast(`更新失敗：${j2.error || r2.status}`);
+    toast("已更新");
+    listUsers();
   }
 
-  // ====== 統計 ======
-  async function loadStats() {
-    const r = await api('/stats', null, 'GET');
-    if (r?.ok) {
-      $('stats').innerHTML =
-        `總數：<b>${r.total}</b>　` +
-        `preorder：<b>${r.preorder}</b>　` +
-        `active：<b>${r.active}</b>`;
-    } else {
-      $('stats').innerHTML = `<span class="err">${r?.error || '讀取失敗'}</span>`;
-    }
-  }
+  function toast(msg) { console.log("[Admin]", msg); }
 
-  // ====== 單筆新增 ======
-  async function addOne() {
-    const handle = $('add_handle').value.trim();
-    const wechat = $('add_wechat').value.trim();
-    const email  = $('add_email').value.trim();
-    if (!handle) {
-      $('add_msg').innerHTML = `<span class="err">handle 必填</span>`;
-      return;
-    }
-    const r = await api('/preorder/add', { handle, wechat, email });
-    $('add_msg').innerHTML = r.ok
-      ? `<span class="ok">OK：新增 ${r.handle}</span>`
-      : `<span class="err">${r.error || '新增失敗'}</span>`;
-    if (r.ok) loadStats();
-  }
+  // 綁定 UI
+  el.btnApply?.addEventListener("click", () => {
+    state.token = (el.token?.value || "").trim();
+    localStorage.setItem("ou_admin_token", state.token);
+    listUsers();
+  });
+  el.btnReload?.addEventListener("click", () => listUsers());
+  el.btnSearch?.addEventListener("click", () => {
+    state.q = (el.txtSearch?.value || "").trim();
+    state.page = 1;
+    listUsers();
+  });
+  el.selLimit?.addEventListener("change", () => {
+    state.limit = parseInt(el.selLimit.value) || 20;
+    listUsers();
+  });
+  el.selStatus?.addEventListener("change", () => {
+    state.status = el.selStatus.value || "all";
+    state.page = 1;
+    listUsers();
+  });
+  el.selRole?.addEventListener("change", () => {
+    state.role = el.selRole.value || "all";
+    state.page = 1;
+    listUsers();
+  });
+  el.pagerPrev?.addEventListener("click", () => {
+    if (state.page > 1) { state.page -= 1; listUsers(); }
+  });
+  el.pagerNext?.addEventListener("click", () => {
+    const maxPage = Math.ceil(state.total / state.limit) || 1;
+    if (state.page < maxPage) { state.page += 1; listUsers(); }
+  });
 
-  // ====== 批量新增 ======
-  async function bulkImport() {
-    const lines = $('bulk_text').value.split('\n').map(s => s.trim()).filter(Boolean);
-    if (!lines.length) {
-      $('bulk_msg').innerHTML = `<span class="err">沒有可匯入的內容</span>`;
-      return;
-    }
-    const r = await api('/preorder/bulk', { lines });
-    if (r?.ok) {
-      $('bulk_msg').innerHTML =
-        `<span class="ok">Imported: ${r.imported}，Skipped: ${r.skipped}</span>`;
-      loadStats();
-    } else {
-      $('bulk_msg').innerHTML = `<span class="err">${r?.error || '匯入失敗'}</span>`;
-    }
-  }
-
-  // ====== 查詢/列表 ======
-  async function search() {
-    const q = $('q').value.trim();
-    const status = $('q_status').value;
-    const limit  = Number($('q_limit').value) || 50;
-
-    const r = await api('/preorder/search', { q, status, limit });
-    if (!r?.ok) {
-      $('list_wrap').innerHTML = `<span class="err">${r?.error || '搜尋失敗'}</span>`;
-      return;
-    }
-
-    if (!r.items?.length) {
-      $('list_wrap').innerHTML = `<div>無資料</div>`;
-      return;
-    }
-
-    const rows = r.items.map(u => `
-      <tr>
-        <td>${u.handle}</td>
-        <td>${u.wechat_id || ''}</td>
-        <td>${u.email || ''}</td>
-        <td>${u.status}</td>
-        <td class="right">
-          <button data-act="activate" data-h="${u.handle}">啟用</button>
-          <button data-act="del" data-h="${u.handle}">刪</button>
-        </td>
-      </tr>
-    `).join('');
-
-    $('list_wrap').innerHTML = `
-      <table>
-        <thead><tr><th>handle</th><th>wechat</th><th>email</th><th>status</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `;
-
-    $('list_wrap').querySelectorAll('button[data-act]').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const act = e.currentTarget.dataset.act;
-        const h   = e.currentTarget.dataset.h;
-        if (act === 'activate') {
-          const rr = await api('/member/activate', { identifier: h });
-          alert(rr.ok ? 'OK：已啟用' : (rr.error || '失敗'));
-        } else if (act === 'del') {
-          if (!confirm(`確定刪除 ${h} ?`)) return;
-          const rr = await api('/preorder/delete', { handle: h });
-          alert(rr.ok ? 'OK：已刪除' : (rr.error || '失敗'));
-        }
-        search(); loadStats();
-      });
-    });
-  }
-
-  // ====== 測試 / 啟用 / 重設密碼 / Login 檢查 ======
-  async function activate() {
-    const id = $('test_id').value.trim();
-    if (!id) return;
-    const r = await api('/member/activate', { identifier: id });
-    $('test_msg').innerHTML = r.ok ? `<span class="ok">OK：已啟用</span>`
-                                   : `<span class="err">${r.error || '失敗'}</span>`;
-  }
-
-  async function resetPass() {
-    const id = $('test_id').value.trim();
-    const password = $('test_pass').value.trim();
-    if (!id || !password) return;
-    const r = await api('/member/reset-password', { identifier: id, new_password: password });
-    $('test_msg').innerHTML = r.ok ? `<span class="ok">OK：已重設</span>`
-                                   : `<span class="err">${r.error || '失敗'}</span>`;
-  }
-
-  async function loginCheck() {
-    const id = $('test_id').value.trim();
-    if (!id) return;
-    const r = await api('/debug/login-check', { identifier: id });
-    $('test_msg').innerHTML = r.ok
-      ? `<span class="ok">found: ${r.found ? 'true' : 'false'}，user: ${r.user?.handle || ''}</span>`
-      : `<span class="err">${r.error || '失敗'}</span>`;
-  }
-
-  // 綁定
-  function bind() {
-    $('btn_stats').addEventListener('click', loadStats);
-    $('btn_add').addEventListener('click', addOne);
-    $('btn_bulk').addEventListener('click', bulkImport);
-    $('btn_search').addEventListener('click', search);
-    $('btn_activate').addEventListener('click', activate);
-    $('btn_reset').addEventListener('click', resetPass);
-    $('btn_login_check').addEventListener('click', loginCheck);
-  }
-
-  // init
-  bind();
+  listUsers();
 })();
+

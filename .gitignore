@@ -1,26 +1,12 @@
-# dependencies
 node_modules/
-
-# env & secrets
+npm-debug.log*
+yarn-error.log*
+coverage/
+dist/
+.tmp/
+.DS_Store
 .env
 .env.*
-*.pem
-*.key
-
-# logs / dumps / local
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-*.log
-*.pid
-*.seed
-*.tgz
-*.orig
-.DS_Store
-
-# build/cache
-dist/
-coverage/
-.tmp/
-.cache/
+!.env.example
+public/uploads/
+public/cache/
