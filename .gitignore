@@ -1,12 +1,27 @@
+.env
+.env.*.local
+
+# node
 node_modules/
 npm-debug.log*
 yarn-error.log*
-coverage/
+pnpm-lock.yaml
+package-lock.json
+
+# build/cache
+.cache/
 dist/
 .tmp/
+logs/
+*.log
+
+# runtime data
+data/chunks.json
+data/*.audit.log
+
+# backups / editor junk
+*.bak*
+*.backup*
+*~ 
 .DS_Store
-.env
-.env.*
-!.env.example
-public/uploads/
-public/cache/
+Thumbs.db

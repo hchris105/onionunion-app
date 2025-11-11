@@ -1,0 +1,5 @@
+fb7fc91 chore: freeze snapshot before cleanup (stop service, add .env.example)
+614edcd chore: nightly sync (admin basic auth + token, /admin GUI, import script default CSV, env cleanup, claim flow)
+c74856b feat(auth): login/claim debug & fixes
+80bfdc0 feat(auth): preorder lookup + claim with wechat + robust login + admin tools
+96a4d11 chore: pin deps & add .env.example; scripts(start/dev)
