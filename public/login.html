@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8">
+<title>登入 - OnionUnion</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font:16px/1.5 system-ui;margin:40px auto;max-width:520px}input{width:100%;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:8px}button{padding:10px 14px;border:0;border-radius:8px;background:#1f6feb;color:#fff}a{color:#1f6feb;text-decoration:none}</style>
+<h2>登入</h2>
+<p>使用 <b>帳號(handle) / wechat / email</b> 其中之一 + 密碼登入。</p>
+<form id="f">
+  <input id="idn" placeholder="帳號 或 wechat 或 email" required>
+  <input id="pwd" type="password" placeholder="密碼" required>
+  <button type="submit">登入</button>
+</form>
+<p>還沒啟用？<a href="/claim.html">去認領/啟用帳號</a></p>
+<script>
+const q=new URLSearchParams(location.search);
+if(q.get("ok")==="1"&&q.get("identifier")){document.querySelector("#idn").value=q.get("identifier");}
+document.querySelector("#f").onsubmit=async(e)=>{
+  e.preventDefault();
+  const identifier=document.querySelector("#idn").value.trim();
+  const password=document.querySelector("#pwd").value;
+  const r=await fetch("/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identifier,password})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok){alert(j.error||"登入失敗");return}
+  localStorage.setItem("JWT",j.token);
+  location.href="/me.html";
+};
+</script>

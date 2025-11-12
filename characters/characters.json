@@ -1,0 +1,20 @@
+[
+  {
+    "code": "CIV-TEAR-001",
+    "name": "泪收者·001",
+    "tier": "民层",
+    "series": "泪系",
+    "archetype": "",
+    "r": 1,
+    "available": true
+  },
+  {
+    "code": "CIV-LIGHT-001",
+    "name": "光瓶师·001",
+    "tier": "民层",
+    "series": "光系",
+    "archetype": "",
+    "r": 1,
+    "available": true
+  }
+]
