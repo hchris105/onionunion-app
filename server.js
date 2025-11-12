@@ -1,57 +1,97 @@
-// server.js
-import './services/db.js'; // 優先嘗試連 DB（若沒有 services/db.js 會被 try/catch 忽略）
+// server.js  — OnionUnion minimal server (ESM)
 import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
+// --- 基本路徑工具（避免相對路徑找不到檔） ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const r = (...p) => path.join(__dirname, ...p);
 
+// --- 環境變數 ---
+import dotenv from "dotenv";
+dotenv.config();
+const PORT = process.env.PORT || 3000;
+const OPEN_REGISTER = String(process.env.OPEN_REGISTER || "0");
+
+// --- DB 連線 ---
+import "./services/db.js";
+
+// --- App 基礎 ---
 const app = express();
+app.use(express.json({ limit: "1mb" }));
+app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
 
-// 解析器（避免 req.body 被吃掉）
-app.use(express.json({ limit: "1mb", strict: false }));
-app.use(express.urlencoded({ extended: false }));
-app.use(express.text({ type: "text/*", limit: "1mb" }));
+// --- 靜態檔案 ---
+app.use(express.static(r("public")));
 
-// 健康檢查
+// --- Healthz ---
 app.get("/healthz", (req, res) => {
   res.json({ ok: true, up: true, ts: Date.now() });
 });
 
-// 靜態檔
-app.use(express.static(path.join(__dirname, "public"), { maxAge: 0 }));
-
-// —— 核心 ask —— //
-import askRouter from "./routes/ask.js";
-app.use("/ask", askRouter);
-
-// —— 可選：Auth（登入/註冊） —— //
-try {
-  const { default: authRouter } = await import("./routes/auth.js");
-  app.use("/auth", authRouter);
-} catch {
-  console.warn("[Auth] skipped (routes/auth.js not present)");
-}
-
-// —— 可選：Admin API & 後台 —— //
-// 以環境變數控制是否掛載（DISABLE_ADMIN=1 就不掛）
-const DISABLE_ADMIN = process.env.DISABLE_ADMIN === "1";
-if (!DISABLE_ADMIN) {
-  try {
-    const { default: adminApi } = await import("./routes/admin.api.js");
-    app.use("/admin/api", adminApi);
-    app.use("/admin", express.static(path.join(__dirname, "public/admin")));
-  } catch {
-    console.warn("[Admin] skipped (admin api/ui not present)");
+// --- 路由載入（用絕對路徑 + 存在才載，避免「找不到」） ---
+async function tryMountAuth() {
+  const p = r("routes", "auth.js");
+  if (fs.existsSync(p)) {
+    const mod = await import(pathToFileURL(p).href).catch(() => import("file://" + p));
+    app.use("/auth", mod.default);
+    console.log("[Auth] mounted:", p);
+  } else {
+    console.log("[Auth] skipped (routes/auth.js not present)");
   }
 }
 
-// —— 啟動 —— //
-const PORT = Number(process.env.PORT || 3000);
-app.listen(PORT, "127.0.0.1", () => {
-  console.log(`[Server] OnionUnion API listening on http://127.0.0.1:${PORT}`);
-  console.log(`[Server] OPEN_REGISTER=${process.env.OPEN_REGISTER ?? 0} (public /auth/register ${process.env.OPEN_REGISTER === "1" ? "open" : "closed"})`);
-});
+async function tryMountAsk() {
+  const p = r("routes", "ask.js");
+  if (fs.existsSync(p)) {
+    const mod = await import(pathToFileURL(p).href).catch(() => import("file://" + p));
+    app.use("/ask", mod.default);
+    console.log("[Ask] mounted:", p);
+  } else {
+    console.log("[Ask] skipped (routes/ask.js not present)");
+  }
+}
 
-export default app;
+async function tryMountAdminApi() {
+  const p = r("routes", "admin.api.js");
+  if (fs.existsSync(p)) {
+    const mod = await import(pathToFileURL(p).href).catch(() => import("file://" + p));
+    app.use("/admin", mod.default);
+    console.log("[AdminAPI] mounted:", p);
+  } else {
+    console.log("[AdminAPI] skipped (routes/admin.api.js not present)");
+  }
+}
+
+// node:url 的 fileURL 轉換（上面用到）
+import { pathToFileURL } from "node:url";
+
+// --- 啟動 ---
+const start = async () => {
+  // 統一輸出 OPEN_REGISTER 狀態（你之前有）
+  console.log(
+    "[Server] OPEN_REGISTER=" +
+      OPEN_REGISTER +
+      " (public /auth/register " +
+      (OPEN_REGISTER === "1" ? "open" : "closed") +
+      ")"
+  );
+
+  await tryMountAuth();
+  await tryMountAsk();
+  await tryMountAdminApi();
+
+  const srv = app.listen(PORT, "127.0.0.1", () => {
+    console.log(`[Server] OnionUnion API listening on http://127.0.0.1:${PORT}`);
+  });
+
+  // 平滑結束
+  process.on("SIGTERM", () => srv.close(() => process.exit(0)));
+  process.on("SIGINT", () => srv.close(() => process.exit(0)));
+};
+
+start();

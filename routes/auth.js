@@ -1,92 +1,100 @@
 // routes/auth.js
 import express from 'express';
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-import { hashPassword, verifyPassword } from '../lib/hash.js';
+import cookieParser from 'cookie-parser';
+import { default as User } from '../models/User.js';
 
 const router = express.Router();
+router.use(express.json());
+router.use(cookieParser());
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
-const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
-
-// 統一簽發 token
-function signToken(user) {
-  const payload = {
-    uid: user._id.toString(),
-    handle: user.handle,
-    roles: user.roles || [],
-    status: user.status || 'preorder',
-  };
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+// 小工具：把使用者輸入轉成「全等、忽略大小寫」的正規表示式
+function exactCaseInsens(str) {
+  const esc = String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${esc}$`, 'i');
 }
 
-/**
- * POST /auth/login
- * body: { handle, password }
- * - 驗證成功 => 200 { token, need_reset:false, profile:{...} }
- * - 需要強制改密 => 403 { code:"MUST_RESET_PASSWORD" }
- */
-router.post('/login', async (req, res) => {
+// 允許登入的狀態（白名單載入多為 preorder，這裡一律允許）
+const ALLOWED_STATUSES = new Set(['preorder', 'member', 'active']);
+
+function sanitizeUser(u) {
+  if (!u) return null;
+  const { _id, handle, email, roles = [], status, wechat_id } = u;
+  return { _id, handle, email, roles, status, wechat_id };
+}
+
+// Debug：檢查 auth 路由活著
+router.get('/_debug/ping', (req, res) => {
+  res.json({ ok: true, ts: Date.now(), note: 'auth router alive' });
+});
+
+// 取得當前使用者
+router.get('/me', async (req, res) => {
   try {
-    const { handle, password } = req.body || {};
-    if (!handle || !password) return res.status(400).json({ error: 'MISSING_CREDENTIALS' });
+    const sid = req.cookies?.sid;
+    if (!sid) return res.status(401).json({ ok: false, error: 'unauthorized' });
 
-    const user = await User.findOne({ handle }).lean(false);
-    if (!user) return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
+    const u = await User.findById(sid).lean();
+    if (!u) return res.status(401).json({ ok: false, error: 'unauthorized' });
 
-    const ok = await verifyPassword(user.password, password);
-    if (!ok) return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
-
-    // 首次登入必須改密
-    if (user.must_reset_password) {
-      return res.status(403).json({ code: 'MUST_RESET_PASSWORD' });
-    }
-
-    const token = signToken(user);
-    return res.json({
-      token,
-      need_reset: false,
-      profile: {
-        handle: user.handle,
-        roles: user.roles,
-        status: user.status,
-        email: user.email || '',
-        wechat_id: user.wechat_id || '',
-      },
-    });
+    return res.json({ ok: true, user: sanitizeUser(u) });
   } catch (e) {
-    console.error('[auth/login] error:', e);
-    res.status(500).json({ error: 'INTERNAL' });
+    console.error('[auth/me] error:', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
 
-/**
- * POST /auth/reset-password
- * body: { handle, old_password, new_password }
- * - old_password 正確 => 重設為 bcrypt 並清除 must_reset_password
- */
-router.post('/reset-password', async (req, res) => {
+// 登入：接受 handle 或 email；密碼接受 password 或 wechat_id（當作初始密碼）
+router.post('/login', async (req, res) => {
   try {
-    const { handle, old_password, new_password } = req.body || {};
-    if (!handle || !old_password || !new_password) {
-      return res.status(400).json({ error: 'MISSING_FIELDS' });
+    const { handle, email, password } = req.body || {};
+    if (!handle && !email) {
+      return res.status(400).json({ ok: false, error: 'missing_handle_or_email' });
     }
-    const user = await User.findOne({ handle }).lean(false);
-    if (!user) return res.status(404).json({ error: 'NOT_FOUND' });
+    if (!password) {
+      return res.status(400).json({ ok: false, error: 'missing_password' });
+    }
 
-    const ok = await verifyPassword(user.password, old_password);
-    if (!ok) return res.status(401).json({ error: 'INVALID_OLD_PASSWORD' });
+    // 以「忽略大小寫」查 handle；或用 email 精確查
+    const q = email
+      ? { email }
+      : { handle: exactCaseInsens(handle) };
 
-    user.password = await hashPassword(new_password);
-    user.must_reset_password = false;
-    await user.save();
+    const u = await User.findOne(q).lean();
+    if (!u) return res.status(404).json({ ok: false, error: 'user_not_found' });
 
-    const token = signToken(user);
-    return res.json({ ok: true, token });
+    // 狀態允許
+    if (!ALLOWED_STATUSES.has(u.status || 'preorder')) {
+      return res.status(403).json({ ok: false, error: 'status_not_allowed', status: u.status });
+    }
+
+    // 密碼比對：允許等於 password 或等於 wechat_id（你的規格）
+    const pwOk =
+      String(password) === String(u.password || '') ||
+      String(password) === String(u.wechat_id || '');
+
+    if (!pwOk) {
+      return res.status(401).json({ ok: false, error: 'invalid_password' });
+    }
+
+    // 設置 cookie 作為簡單會話（之後有需要可換 JWT）
+    res.cookie('sid', String(u._id), {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 3600 * 1000,
+      path: '/',
+    });
+
+    return res.json({ ok: true, user: sanitizeUser(u) });
   } catch (e) {
-    console.error('[auth/reset-password] error:', e);
-    res.status(500).json({ error: 'INTERNAL' });
+    console.error('[auth/login] error:', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
   }
+});
+
+// 登出
+router.post('/logout', (req, res) => {
+  res.clearCookie('sid', { path: '/' });
+  res.json({ ok: true });
 });
 
 export default router;
