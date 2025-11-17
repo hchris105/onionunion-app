@@ -1,224 +1,445 @@
-// routes/ask.js — 完整版（ESM）
+// routes/ask.js
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
-import OpenAI from "openai";
+import cookieParser from "cookie-parser";
 
-const router = Router();
+import db from "../services/db.js";
+import User from "../models/User.js";
+
+const { mongoose } = db;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const router = Router();
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// 解析 cookie（用 sid 找登入中的 user）
+router.use(cookieParser());
 
-// ── superprompt 自動載入 ─────────────────────────────
-const SUPER_PATH = path.resolve(__dirname, "..", "superprompt.md");
-let SYSTEM_TEXT = "You are OnionUnion · Jafar.";
-let SYS_MTIME = 0;
-const sha1 = (s) => crypto.createHash("sha1").update(String(s)).digest("hex");
+// 看得到現在載入哪支檔（除錯很有用）
+console.log("[ask] using", import.meta.url);
 
-function reloadSystem() {
-  try {
-    if (fs.existsSync(SUPER_PATH)) {
-      const st = fs.statSync(SUPER_PATH);
-      if (st.mtimeMs !== SYS_MTIME) {
-        SYSTEM_TEXT = fs.readFileSync(SUPER_PATH, "utf-8");
-        SYS_MTIME = st.mtimeMs;
-        console.log("[System] superprompt.md reloaded", st.mtime.toISOString(), "len", SYSTEM_TEXT.length);
-      }
+// —— 保底解析（若 body 是字串或被反代吃掉，這裡自救）——
+router.use((req, _res, next) => {
+  if (typeof req.body === "string") {
+    try { req.body = JSON.parse(req.body); } catch {}
+  }
+  next();
+});
+
+// —— superprompt 熱重載 —— 
+const SUPERPROMPT_PATH = path.resolve(__dirname, "..", "superprompt.md");
+let SYSTEM_TEXT = fs.existsSync(SUPERPROMPT_PATH)
+  ? fs.readFileSync(SUPERPROMPT_PATH, "utf8")
+  : "# superprompt missing";
+let SYS_HASH = sha1(SYSTEM_TEXT);
+let SYS_LEN = SYSTEM_TEXT.length;
+
+try {
+  fs.watch(SUPERPROMPT_PATH, { persistent: false }, () => {
+    try {
+      SYSTEM_TEXT = fs.readFileSync(SUPERPROMPT_PATH, "utf8");
+      SYS_HASH = sha1(SYSTEM_TEXT);
+      SYS_LEN = SYSTEM_TEXT.length;
+      console.log(
+        "[System] superprompt.md reloaded",
+        new Date().toISOString(),
+        "len",
+        SYS_LEN
+      );
+    } catch (e) {
+      console.warn("[System] reload failed:", e.message);
     }
+  });
+} catch {
+  /* ignore watcher errors */
+}
+
+function sha1(s) {
+  return crypto.createHash("sha1").update(s).digest("hex");
+}
+
+// === 共用小工具 ===
+
+// 從 req 找出目前 user（依 sid cookie）
+async function getUserFromReq(req) {
+  const sid = req.cookies?.sid;
+  if (!sid) return null;
+  try {
+    const u = await User.findById(sid).lean();
+    return u || null;
   } catch (e) {
-    console.warn("[System] reload failed", e?.message || e);
+    console.warn("[ask] getUserFromReq error:", e.message || e);
+    return null;
   }
 }
-reloadSystem();
-const ensureFresh = () => { try { if (fs.existsSync(SUPER_PATH) && fs.statSync(SUPER_PATH).mtimeMs !== SYS_MTIME) reloadSystem(); } catch {} };
 
-// ── 角色/訪客策略 ─────────────────────────────────────
-const VISITOR_SUFFIX =
-  "（你目前為訪客模式：輸出為簡版概要。若需完整27公式合成＋高清卡片，請登入會員。）";
-
-function getRole(req) {
-  return req?.user?.role || "visitor";
+// 只允許 active 會員使用 /ask
+function ensureActiveUser(u) {
+  if (!u) {
+    return {
+      ok: false,
+      code: "unauthorized",
+      message: "請先登入會員帳號再使用此服務。",
+    };
+  }
+  if (u.status !== "active") {
+    return {
+      ok: false,
+      code: "not_active_member",
+      message: "目前僅限正式會員（status = active）使用此服務。",
+    };
+  }
+  return { ok: true };
 }
 
-function pickModel(body) {
-  return body?._admin?.model || process.env.OPENAI_MODEL || "gpt-5";
+// SSE 錯誤輸出 helper
+function sendSseError(res, payload) {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.write(`event: final\ndata: ${JSON.stringify(payload)}\n\n`);
+  res.write(`event: done\ndata: [DONE]\n\n`);
+  res.end();
 }
 
-function buildPrompt(b = {}) {
-  const blocks = [];
-  if (b.name) blocks.push(`姓名：${b.name}`);
-  if (b.birthday) blocks.push(`生日：${b.birthday}`);
-  if (b.mother) blocks.push(`母親姓名：${b.mother}`);
-  if (b.mbti) blocks.push(`MBTI：${b.mbti}`);
-  if (b.extra) blocks.push(`條件：${b.extra}`);
-  if (b.question) blocks.push(`問題：${b.question}`);
-  const content = blocks.join("\n");
-  if (!b.question && !b.name) return { err: "至少需要『姓名或問題』其中一項。" };
-  return { content, tail: "" };
+// === usage 記錄小工具 ===
+
+// 從 req 推一個 handle：優先拿 user.handle，其次 body.handle
+function getHandleFromReq(req) {
+  if (req.user?.handle) return req.user.handle;
+  const body = req.body || {};
+  return body.handle || null;
 }
 
-// ── 非串流（正確路由：/ask/）──────────────────────────
-router.post("/", async (req, res) => {
-  ensureFresh();
-  const t0 = Date.now();
-
+// 非阻塞記錄 usage：寫失敗只會 log，不會拖累 /ask
+async function recordUsage(req, payload) {
   try {
-    const prompt = buildPrompt(req.body);
-    if (prompt.err) {
+    const conn = mongoose.connection;
+    if (!conn || conn.readyState !== 1) {
+      console.warn("[usage] mongoose not connected, skip usage record");
+      return;
+    }
+    const col = conn.collection("usage");
+
+    const doc = {
+      ts: new Date(),
+      route: payload.route || "/ask",
+      model: payload.model || (process.env.OPENAI_MODEL || "gpt-5"),
+      handle: getHandleFromReq(req),
+
+      input_tokens: payload.inputTokens ?? 0,
+      output_tokens: payload.outputTokens ?? 0,
+      elapsed_ms: payload.elapsedMs ?? 0,
+
+      approx_input_chars: payload.approxInputChars ?? 0,
+      approx_output_chars: payload.approxOutputChars ?? 0,
+
+      status: payload.status || "ok",
+      error: payload.error || "",
+      is_stream: !!payload.isStream,
+    };
+
+    await col.insertOne(doc);
+  } catch (err) {
+    console.error("[usage] record failed:", err.message || err);
+  }
+}
+
+// === OpenAI 調用（非流式）===
+
+async function callOpenAINonStream({ question, name }) {
+  const model = process.env.OPENAI_MODEL || "gpt-5";
+  const timeout = Number(process.env.OPENAI_TIMEOUT_MS || 180000);
+  const controller = new AbortController();
+  const tt = setTimeout(() => controller.abort(), timeout);
+
+  const prompt = [
+    `# System\n${SYSTEM_TEXT}\n`,
+    `# User\n姓名：${name ?? ""}\n問題：${question}\n`,
+  ].join("\n");
+
+  const resp = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      input: prompt,
+      max_output_tokens: Number(process.env.MAX_TOKENS || 8000),
+    }),
+    signal: controller.signal,
+  }).finally(() => clearTimeout(tt));
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`OpenAI HTTP ${resp.status}: ${text.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+
+  const text =
+    data?.output_text ??
+    data?.content?.[0]?.text ??
+    JSON.stringify(data);
+
+  const usage = data?.usage || {};
+
+  return { text, usage, model };
+}
+
+// === OpenAI 調用（SSE）===
+
+async function callOpenAIStream({ question, name, res }) {
+  const model = process.env.OPENAI_MODEL || "gpt-5";
+  const timeout = Number(process.env.OPENAI_TIMEOUT_MS || 180000);
+  const controller = new AbortController();
+  const tt = setTimeout(() => controller.abort(), timeout);
+
+  const prompt = [
+    `# System\n${SYSTEM_TEXT}\n`,
+    `# User\n姓名：${name ?? ""}\n問題：${question}\n`,
+  ].join("\n");
+
+  const resp = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      input: prompt,
+      max_output_tokens: Number(process.env.MAX_TOKENS || 8000),
+      stream: true,
+    }),
+    signal: controller.signal,
+  }).finally(() => clearTimeout(tt));
+
+  if (!resp.ok || !resp.body) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`OpenAI HTTP ${resp.status}: ${text.slice(0, 200)}`);
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    res.write(chunk);
+  }
+  res.write(`\n`);
+  res.end();
+}
+
+// === /ask（非流式）===
+
+router.post("/", async (req, res) => {
+  const t0 = Date.now();
+  try {
+    // 1) 確認登入 & active
+    const user = await getUserFromReq(req);
+    const gate = ensureActiveUser(user);
+    if (!gate.ok) {
+      const payload = {
+        ok: false,
+        error: gate.code,
+        message: gate.message,
+        sys_hash: SYS_HASH,
+        sys_len: SYS_LEN,
+      };
+
+      recordUsage(req, {
+        route: "/ask",
+        model: process.env.OPENAI_MODEL || "gpt-5",
+        inputTokens: 0,
+        outputTokens: 0,
+        elapsedMs: Date.now() - t0,
+        approxInputChars: 0,
+        approxOutputChars: 0,
+        status: gate.code,
+        error: gate.message,
+        isStream: false,
+      }).catch(() => {});
+
+      return res.status(gate.code === "unauthorized" ? 401 : 403).json(payload);
+    }
+    // 給 usage 用
+    req.user = user;
+
+    const b = req.body || {};
+    const question = b.question ?? b.q ?? "";
+    const name = b.name ?? b.user ?? "";
+
+    if (!question) {
       return res.status(400).json({
-        ok: false, error: "missing_field", message: prompt.err,
-        sys_hash: sha1(SYSTEM_TEXT), sys_len: SYSTEM_TEXT.length,
+        ok: false,
+        error: "missing_field",
+        message: "缺少 question",
+        sys_hash: SYS_HASH,
+        sys_len: SYS_LEN,
       });
     }
 
-    const role = getRole(req);
-    const model = pickModel(req.body);
-    const isVisitor = role === "visitor";
+    const { text, usage } = await callOpenAINonStream({ question, name });
+    const elapsed = Date.now() - t0;
 
-    const maxTokens = Number(
-      isVisitor
-        ? (process.env.VISITOR_MAX_TOKENS || 300)
-        : (req.body?._admin?.max_output_tokens ?? process.env.MAX_TOKENS ?? 8000)
-    );
+    const inputTokens =
+      usage?.input_tokens ??
+      usage?.prompt_tokens ??
+      0;
+    const outputTokens =
+      usage?.output_tokens ??
+      usage?.completion_tokens ??
+      0;
 
-    const r = await client.responses.create({
-      model,
-      input: [
-        { role: "system", content: SYSTEM_TEXT },
-        { role: "user", content: prompt.content + (isVisitor ? `\n\n請以簡版概要回覆。${VISITOR_SUFFIX}` : "") },
-      ],
-      reasoning: { effort: "high" },
-      text: { verbosity: "high" },
-      max_output_tokens: maxTokens,
-    });
+    const approxInputChars =
+      String(question || "").length +
+      String(name || "").length +
+      SYS_LEN;
+    const approxOutputChars = String(text || "").length;
 
-    const text = (r?.output_text || "").trim();
-    const answer = (text || "（沒有產出文字）") + (prompt.tail ? `\n\n${prompt.tail}` : "");
+    recordUsage(req, {
+      route: "/ask",
+      model: process.env.OPENAI_MODEL || "gpt-5",
+      inputTokens,
+      outputTokens,
+      elapsedMs: elapsed,
+      approxInputChars,
+      approxOutputChars,
+      status: "ok",
+      isStream: false,
+    }).catch(() => {});
 
-    res.json({
-      ok: true, used_model: model, elapsed_ms: Date.now() - t0,
-      answer, sys_hash: sha1(SYSTEM_TEXT), sys_len: SYSTEM_TEXT.length,
-      role,
+    return res.json({
+      ok: true,
+      output: text,
+      sys_hash: SYS_HASH,
+      sys_len: SYS_LEN,
     });
   } catch (e) {
-    res.status(500).json({
-      ok: false, error: "server_error", detail: String(e?.message || e),
-      sys_hash: sha1(SYSTEM_TEXT), sys_len: SYSTEM_TEXT.length,
+    const msg = e?.message || String(e);
+
+    recordUsage(req, {
+      route: "/ask",
+      model: process.env.OPENAI_MODEL || "gpt-5",
+      inputTokens: 0,
+      outputTokens: 0,
+      elapsedMs: Date.now() - t0,
+      approxInputChars: 0,
+      approxOutputChars: 0,
+      status: "error",
+      error: msg,
+      isStream: false,
+    }).catch(() => {});
+
+    return res.status(500).json({
+      ok: false,
+      error: msg,
+      sys_hash: SYS_HASH,
+      sys_len: SYS_LEN,
     });
   }
 });
 
-// ── 串流（正確路由：/ask/stream）───────────────────────
+// === /ask/stream（SSE）===
+
 router.post("/stream", async (req, res) => {
-  ensureFresh();
   const t0 = Date.now();
-
-  res.status(200);
-  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-  res.setHeader("Cache-Control", "no-cache, no-transform");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-  res.write("retry: 15000\n: ok\n\n");
-  res.flushHeaders?.();
-
-  const write = (event, data) => res.write(`event: ${event}\n` + `data: ${JSON.stringify(data)}\n\n`);
-  const endOK = (payload = { ok: true, done: true }) => {
-    try { write("done", payload); } catch {}
-    try { res.write(`data: [DONE]\n\n`); } catch {}
-    try { res.end(); } catch {}
-  };
-  const endErr = (err) => {
-    try { write("error", { ok:false, error:"server_error", detail:String(err?.message||err), sys_hash:sha1(SYSTEM_TEXT), sys_len:SYSTEM_TEXT.length }); } catch {}
-    endOK({ ok:false, done:true });
-  };
-
-  const hb = setInterval(() => { try { res.write(": ping\n\n"); } catch {} }, 15000);
-  const clearHB = () => { try { clearInterval(hb); } catch {} };
-
   try {
-    const prompt = buildPrompt(req.body);
-    if (prompt.err) {
-      write("final", { ok:false, error:"missing_field", message:prompt.err, sys_hash:sha1(SYSTEM_TEXT), sys_len:SYSTEM_TEXT.length });
-      clearHB(); return endOK({ ok:false, done:true });
+    // 1) 確認登入 & active
+    const user = await getUserFromReq(req);
+    const gate = ensureActiveUser(user);
+    if (!gate.ok) {
+      const payload = {
+        ok: false,
+        error: gate.code,
+        message: gate.message,
+        sys_hash: SYS_HASH,
+        sys_len: SYS_LEN,
+      };
+
+      recordUsage(req, {
+        route: "/ask/stream",
+        model: process.env.OPENAI_MODEL || "gpt-5",
+        inputTokens: 0,
+        outputTokens: 0,
+        elapsedMs: Date.now() - t0,
+        approxInputChars: 0,
+        approxOutputChars: 0,
+        status: gate.code,
+        error: gate.message,
+        isStream: true,
+      }).catch(() => {});
+
+      return sendSseError(res, payload);
+    }
+    req.user = user;
+
+    const b = req.body || {};
+    const question = b.question ?? b.q ?? "";
+    const name = b.name ?? b.user ?? "";
+
+    if (!question) {
+      const payload = {
+        ok: false,
+        error: "missing_field",
+        message: "缺少 question",
+        sys_hash: SYS_HASH,
+        sys_len: SYS_LEN,
+      };
+      return sendSseError(res, payload);
     }
 
-    const role = getRole(req);
-    const isVisitor = role === "visitor";
-    const model = pickModel(req.body);
-    const maxTokens = Number(
-      isVisitor
-        ? (process.env.VISITOR_MAX_TOKENS || 300)
-        : (req.body?._admin?.max_output_tokens ?? process.env.MAX_TOKENS ?? 8000)
-    );
+    await callOpenAIStream({ question, name, res });
 
-    const userText = prompt.content + (isVisitor ? `\n\n請以簡版概要回覆。${VISITOR_SUFFIX}` : "");
+    const elapsed = Date.now() - t0;
+    const approxInputChars =
+      String(question || "").length +
+      String(name || "").length +
+      SYS_LEN;
 
-    try {
-      const stream = await client.responses.stream({
-        model,
-        input: [
-          { role: "system", content: SYSTEM_TEXT },
-          { role: "user", content: userText },
-        ],
-        reasoning: { effort: "high" },
-        text: { verbosity: "high" },
-        max_output_tokens: maxTokens,
-      });
-
-      let full = "";
-      for await (const ev of stream) {
-        if (ev.type === "response.output_text.delta") {
-          const delta = ev.delta || "";
-          if (delta) {
-            full += delta;
-            write("delta", { delta });
-          }
-        } else if (ev.type === "response.error") {
-          clearHB();
-          write("final", { ok:false, error:"server_error", detail:ev.error?.message||"responses stream error", answer:"", sys_hash:sha1(SYSTEM_TEXT), sys_len:SYSTEM_TEXT.length });
-          return endOK({ ok:false, done:true });
-        }
-      }
-
-      await stream.finalResponse().catch(() => null);
-
-      const answer = (full.trim() || "（沒有產出文字）");
-      clearHB();
-      write("final", {
-        ok: true, used_model: model, elapsed_ms: Date.now() - t0, answer,
-        sys_hash: sha1(SYSTEM_TEXT), sys_len: SYSTEM_TEXT.length, role
-      });
-      return endOK({ ok:true, done:true });
-    } catch (e1) {
-      try {
-        const r = await client.responses.create({
-          model,
-          input: [
-            { role: "system", content: SYSTEM_TEXT },
-            { role: "user", content: userText },
-          ],
-          reasoning: { effort: "high" },
-          text: { verbosity: "high" },
-          max_output_tokens: maxTokens,
-        });
-        const text = (r?.output_text || "").trim();
-        clearHB();
-        write("final", {
-          ok: true, used_model: model, elapsed_ms: Date.now() - t0, answer: (text || "（沒有產出文字）"),
-          sys_hash: sha1(SYSTEM_TEXT), sys_len: SYSTEM_TEXT.length, role
-        });
-        return endOK({ ok:true, done:true });
-      } catch (e2) {
-        clearHB(); return endErr(e2);
-      }
-    }
+    recordUsage(req, {
+      route: "/ask/stream",
+      model: process.env.OPENAI_MODEL || "gpt-5",
+      inputTokens: 0,
+      outputTokens: 0,
+      elapsedMs: elapsed,
+      approxInputChars,
+      approxOutputChars: 0,
+      status: "ok",
+      isStream: true,
+    }).catch(() => {});
   } catch (e) {
-    clearHB(); return endErr(e);
-  } finally {
-    try { req.on?.("close", () => endOK({ ok:false, aborted:true })); } catch {}
+    const msg = e?.message || String(e);
+
+    recordUsage(req, {
+      route: "/ask/stream",
+      model: process.env.OPENAI_MODEL || "gpt-5",
+      inputTokens: 0,
+      outputTokens: 0,
+      elapsedMs: Date.now() - t0,
+      approxInputChars: 0,
+      approxOutputChars: 0,
+      status: "error",
+      error: msg,
+      isStream: true,
+    }).catch(() => {});
+
+    const payload = {
+      ok: false,
+      error: msg,
+      sys_hash: SYS_HASH,
+      sys_len: SYS_LEN,
+    };
+    return sendSseError(res, payload);
   }
 });
 
