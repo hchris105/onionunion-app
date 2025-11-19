@@ -1,3 +1,4 @@
+// backend/routes/ask.js
 import { Router } from "express";
 import OpenAI from "openai";
 import fs from "fs";
@@ -11,11 +12,26 @@ const router = Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ---------- OpenAI client ----------
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  organization: process.env.OPENAI_ORG_ID || undefined,
-});
+// ---------- OpenAI client：懶載入，缺 KEY 不會讓服務掛掉 ----------
+let client = null;
+
+function getOpenAIClient() {
+  if (client) return client;
+
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) {
+    console.error(
+      "[ask] OPENAI_API_KEY is missing; /ask will return 503 until it is set."
+    );
+    return null;
+  }
+
+  client = new OpenAI({
+    apiKey: key,
+    organization: process.env.OPENAI_ORG_ID || undefined,
+  });
+  return client;
+}
 
 // ---------- small helpers ----------
 function sha1(str) {
@@ -138,7 +154,9 @@ function loadPrompt(kind) {
       cache.text =
         process.env.SYS_PROMPT || "You are OnionUnion assistant (fallback).";
       console.log(
-        `[System] ${isTrial ? "trial" : "super"} prompt missing, fallback len=`,
+        `[System] ${
+          isTrial ? "trial" : "super"
+        } prompt missing, fallback len=`,
         cache.text.length,
         "sha1=",
         sha1(cache.text)
@@ -326,6 +344,15 @@ router.post("/", async (req, res) => {
       max_output_tokens: maxTokens,
     };
 
+    const client = getOpenAIClient();
+    if (!client) {
+      return res.status(503).json({
+        ok: false,
+        error: "missing_openai_key",
+        message: "系統尚未設定 OPENAI_API_KEY，請通知管理員補上。",
+      });
+    }
+
     const resp = await client.responses.create(params);
     let text = extractText(resp).trim();
 
@@ -451,6 +478,16 @@ router.post("/stream", async (req, res) => {
     res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
+
+    const client = getOpenAIClient();
+    if (!client) {
+      write("final", {
+        ok: false,
+        error: "missing_openai_key",
+        message: "系統尚未設定 OPENAI_API_KEY，請通知管理員補上。",
+      });
+      return res.end();
+    }
 
     const heartbeat = setInterval(() => {
       write("heartbeat", { ts: Date.now() });

@@ -1,4 +1,4 @@
-// server.js — OnionUnion minimal server (ESM, with debug logs)
+// backend/server.js — OnionUnion minimal server (ESM, with debug logs)
 import express from "express";
 import cookieParser from "cookie-parser";
 import path from "node:path";
@@ -26,15 +26,33 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// 靜態資源
-app.use(express.static(r("public")));
+// ---- 靜態資源：backend/public + frontend/dist -------------------------------
+const PUBLIC_DIR = r("public");
+if (fs.existsSync(PUBLIC_DIR)) {
+  app.use(express.static(PUBLIC_DIR));
+  console.log("[Static] backend public mounted:", PUBLIC_DIR);
+}
 
-// 健康檢查
+// 如果你有前端 build（例如 React / Vite），預設放 ../frontend/dist
+const FRONTEND_BUILD_DIR =
+  process.env.FRONTEND_BUILD_DIR ||
+  path.join(__dirname, "..", "frontend", "dist");
+
+if (fs.existsSync(FRONTEND_BUILD_DIR)) {
+  app.use(express.static(FRONTEND_BUILD_DIR));
+  console.log("[Static] frontend build mounted:", FRONTEND_BUILD_DIR);
+
+  // 根路由交給前端
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(FRONTEND_BUILD_DIR, "index.html"));
+  });
+}
+
+// ---- 健康檢查 / ping --------------------------------------------------------
 app.get("/healthz", (req, res) =>
   res.json({ ok: true, up: true, ts: Date.now() })
 );
 
-// 簡單 ping 測試
 app.get("/ping", (req, res) =>
   res.json({ ok: true, msg: "pong", ts: Date.now() })
 );
@@ -79,7 +97,7 @@ async function start() {
     process.exit(1);
   }
 
-  // 掛上各路由
+  // 掛上各路由（都在 backend/routes 下）
   await mountIfExists("/auth", "routes/auth.js");
   await mountIfExists("/ask", "routes/ask.js");
   await mountIfExists("/admin", "routes/admin.api.js");
