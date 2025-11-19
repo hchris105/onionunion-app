@@ -8,6 +8,9 @@ const router = express.Router();
 router.use(express.json());
 router.use(cookieParser());
 
+// 管理員用的簡單 Token（從 .env 讀取）
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
+
 // 小工具：把使用者輸入轉成「全等、忽略大小寫」的正規表示式
 function exactCaseInsens(str) {
   const esc = String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -15,7 +18,7 @@ function exactCaseInsens(str) {
 }
 
 // 允許登入的狀態（白名單載入多為 preorder，這裡一律允許）
-const ALLOWED_STATUSES = new Set(['preorder', 'member', 'active']);
+const ALLOWED_STATUSES = new Set(['preorder', 'member', 'active', 'trial']);
 
 function sanitizeUser(u) {
   if (!u) return null;
@@ -31,6 +34,8 @@ function sanitizeUser(u) {
     character_line,
     character_assigned_at,
     must_change_password,
+    trial_ask_limit,
+    trial_ask_used,
   } = u;
 
   return {
@@ -45,6 +50,8 @@ function sanitizeUser(u) {
     character_line,
     character_assigned_at,
     must_change_password: !!must_change_password,
+    trial_ask_limit: trial_ask_limit ?? null,
+    trial_ask_used: trial_ask_used ?? 0,
   };
 }
 
@@ -204,15 +211,22 @@ router.post('/change-password', async (req, res) => {
 
     const newPw = String(new_password);
 
-    // ✅ 強制寫入 password + must_change_password（用原生 collection，避免怪問題）
+    // ★ 是否要在這次改密碼時，順便把 preorder 升級為 active
+    const shouldUpgradeToActive = mustChange && (u.status === 'preorder');
+
+    // 準備要 set 的欄位
+    const setFields = {
+      password: newPw,
+      must_change_password: false,
+    };
+    if (shouldUpgradeToActive) {
+      setFields.status = 'active';
+    }
+
+    // ✅ 強制寫入 password + must_change_password (+ status)
     await User.collection.updateOne(
       { _id: u._id },
-      {
-        $set: {
-          password: newPw,
-          must_change_password: false,
-        },
-      }
+      { $set: setFields }
     );
 
     // 再讀一次最新的 user
@@ -241,10 +255,7 @@ router.post('/change-password', async (req, res) => {
           u = await User.findById(u._id).lean();
         }
       } catch (err) {
-        console.error(
-          '[auth/change-password] grantRandomCharacter error:',
-          err
-        );
+        console.error('[auth/change-password] grantRandomCharacter error:', err);
       }
     }
 
@@ -260,11 +271,154 @@ router.post('/change-password', async (req, res) => {
       ok: true,
       changed: true,
       rewarded: !!rewardedCharacter,
+      upgraded_to_active: !!shouldUpgradeToActive,
       user: sanitizeUser(u),
       character: rewardedCharacter,
     });
   } catch (e) {
     console.error('[auth/change-password] error:', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// 管理員：重置用戶（回到預約白名單狀態＋清掉角色欄位）
+router.post('/admin/reset-user', async (req, res) => {
+  try {
+    const token = req.headers['x-admin-token'] || req.headers['X-Admin-Token'];
+    if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
+      return res.status(403).json({
+        ok: false,
+        error: 'admin_forbidden',
+        message: '缺少或錯誤的 X-Admin-Token',
+      });
+    }
+
+    const { handle, email, mode = 'full', default_password } = req.body || {};
+    if (!handle && !email) {
+      return res
+        .status(400)
+        .json({ ok: false, error: 'missing_handle_or_email' });
+    }
+
+    const q = email ? { email } : { handle: exactCaseInsens(handle) };
+    let u = await User.findOne(q).lean();
+    if (!u) {
+      return res.status(404).json({ ok: false, error: 'user_not_found' });
+    }
+
+    const basePassword =
+      default_password ||
+      (handle ? String(handle) : email ? String(email) : 'OnionUser123');
+
+    const setFields = {
+      status: 'preorder',
+      password: basePassword,
+      must_change_password: true,
+      trial_ask_limit: null,
+      trial_ask_used: 0,
+    };
+
+    const unsetFields = {
+      character_code: '',
+      character_name: '',
+      character_line: '',
+      character_assigned_at: '',
+    };
+
+    await User.collection.updateOne(
+      { _id: u._id },
+      {
+        $set: setFields,
+        $unset: unsetFields,
+      }
+    );
+
+    let characterReset = false;
+    try {
+      if (
+        charactersService &&
+        typeof charactersService.resetUserCharacters === 'function'
+      ) {
+        await charactersService.resetUserCharacters(u.handle || u._id);
+        characterReset = true;
+      }
+    } catch (err) {
+      console.error('[auth/admin/reset-user] resetUserCharacters error:', err);
+    }
+
+    u = await User.findById(u._id).lean();
+
+    return res.json({
+      ok: true,
+      mode,
+      user: sanitizeUser(u),
+      character_reset_via_service: characterReset,
+      message:
+        '用戶已重置為預約狀態，密碼、角色欄位、Trial 計數已清除。角色池與抽取紀錄如需完整回收，請在 charactersService.resetUserCharacters 中實作。',
+    });
+  } catch (e) {
+    console.error('[auth/admin/reset-user] error:', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// 管理員：授予 / 設定 Trial 資格
+// POST /auth/admin/grant-trial
+// Header: X-Admin-Token: <ADMIN_TOKEN>
+// Body: { handle 或 email, limit?: number }
+router.post('/admin/grant-trial', async (req, res) => {
+  try {
+    const token = req.headers['x-admin-token'] || req.headers['X-Admin-Token'];
+    if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
+      return res.status(403).json({
+        ok: false,
+        error: 'admin_forbidden',
+        message: '缺少或錯誤的 X-Admin-Token',
+      });
+    }
+
+    const { handle, email, limit } = req.body || {};
+    if (!handle && !email) {
+      return res
+        .status(400)
+        .json({ ok: false, error: 'missing_handle_or_email' });
+    }
+
+    const q = email ? { email } : { handle: exactCaseInsens(handle) };
+    let u = await User.findOne(q).lean();
+    if (!u) {
+      return res.status(404).json({ ok: false, error: 'user_not_found' });
+    }
+
+    let trialLimit = Number(limit ?? 3);
+    if (!Number.isFinite(trialLimit) || trialLimit <= 0) {
+      trialLimit = 3;
+    }
+
+    await User.collection.updateOne(
+      { _id: u._id },
+      {
+        $set: {
+          status: 'trial',
+          trial_ask_limit: trialLimit,
+          trial_ask_used: 0,
+        },
+      }
+    );
+
+    u = await User.findById(u._id).lean();
+
+    return res.json({
+      ok: true,
+      user: sanitizeUser(u),
+      trial: {
+        limit: u.trial_ask_limit,
+        used: u.trial_ask_used,
+      },
+      message: `已設定為 trial 帳號，可試用 ${u.trial_ask_limit} 次。`,
+    });
+  } catch (e) {
+    console.error('[auth/admin/grant-trial] error:', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });

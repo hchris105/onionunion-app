@@ -117,6 +117,51 @@ export async function grantRandomCharacter(handle, kind = "preorder500") {
   };
 }
 
+/**
+ * 重置某個用戶的角色分配與抽卡紀錄
+ * 會被 /auth/admin/reset-user 呼叫，用於「回收角色 + 清空抽卡紀錄」
+ *
+ * @param {string} handleOrId - 通常是 handle；我們這裡直接當成 handle 使用
+ */
+export async function resetUserCharacters(handleOrId) {
+  const conn = mongoose.connection;
+  if (!conn || conn.readyState !== 1) {
+    throw new Error("db_not_connected");
+  }
+
+  const handle = String(handleOrId || "").trim();
+  if (!handle) {
+    throw new Error("missing_handle");
+  }
+
+  const colChars = conn.collection("characters");
+  const colDraws = conn.collection("roledraws");
+
+  // 1) 將 characters 裡分配給這個 handle 的角色解除分配（放回角色池）
+  const charResult = await colChars.updateMany(
+    { assigned_handle: handle },
+    {
+      $unset: {
+        assigned_handle: "",
+        assigned_at: "",
+        assigned_kind: "",
+      },
+    }
+  );
+
+  // 2) 刪除 roledraws 裡這個人的抽卡紀錄
+  const drawResult = await colDraws.deleteMany({ handle });
+
+  return {
+    ok: true,
+    handle,
+    clearedCharacters: charResult.modifiedCount || 0,
+    deletedDraws: drawResult.deletedCount || 0,
+  };
+}
+
+// 匯出服務物件
 export default {
   grantRandomCharacter,
+  resetUserCharacters,
 };
