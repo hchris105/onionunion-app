@@ -1,5 +1,7 @@
 import { Router } from "express";
-import OpenAI from "openai";
+// OpenAI 改成 Gemini 3 Pro
+// import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
@@ -11,10 +13,15 @@ const router = Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ---------- OpenAI client ----------
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  organization: process.env.OPENAI_ORG_ID || undefined,
+// ---------- Gemini client ----------
+if (!process.env.GEMINI_API_KEY) {
+  console.warn(
+    "[ask] GEMINI_API_KEY 未設定，呼叫 Gemini 3 Pro 會失敗，請檢查 .env"
+  );
+}
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
 });
 
 // ---------- small helpers ----------
@@ -22,6 +29,12 @@ function sha1(str) {
   return crypto.createHash("sha1").update(str || "", "utf8").digest("hex");
 }
 
+/**
+ * Trial 優惠次數狀態：
+ * - TRIAL_ASK_LIMIT（預設 3）為「優惠價上限次數」
+ * - 第 1 ~ limit 次：tier = trial_discount
+ * - 之後：tier = trial_full
+ */
 function getTrialQuota(user) {
   const defaultLimit = Number(process.env.TRIAL_ASK_LIMIT ?? 3);
   const limit =
@@ -31,10 +44,17 @@ function getTrialQuota(user) {
       ? user.trial_ask_limit
       : defaultLimit;
   const used = Number(user.trial_ask_used ?? 0) || 0;
+
+  const remaining = Math.max(0, limit - used);
+  const discountEligible = used < limit;
+  const tier = discountEligible ? "trial_discount" : "trial_full";
+
   return {
     limit,
     used,
-    remaining: Math.max(0, limit - used),
+    remaining,
+    discountEligible,
+    tier,
   };
 }
 
@@ -69,17 +89,14 @@ function ensureAskAllowed(user) {
   }
 
   if (status === "trial") {
+    // 🔺 新規則：Trial 不會被擋，只是有「優惠價前 3 次」的差異
     const quota = getTrialQuota(user);
-    if (quota.remaining <= 0) {
-      return {
-        ok: false,
-        httpStatus: 403,
-        code: "trial_quota_exhausted",
-        message: `試用次數已用完（${quota.used}/${quota.limit}），如需繼續使用請依 Trial 規則付費。`,
-        trial: quota,
-      };
-    }
-    return { ok: true, httpStatus: 200, code: "ok_trial", trial: quota };
+    return {
+      ok: true,
+      httpStatus: 200,
+      code: "ok_trial",
+      trial: quota,
+    };
   }
 
   if (status === "active" || status === "member") {
@@ -97,7 +114,7 @@ function ensureAskAllowed(user) {
 // ---------- prompt loading ----------
 const PROMPT_DIR = path.join(__dirname, "..", "data", "prompts");
 const SUPER_PATH = path.join(PROMPT_DIR, "superprompt.md");
-const TRIAL_PATH = path.join(PROMPT_DIR, "trial-default.md");
+const TRIAL_PATH = path.join(PROMPT_DIR, "trial-default.md"); // 暫時不再使用，但先保留路徑
 
 const promptCache = {
   super: { text: "", mtime: 0 },
@@ -105,9 +122,9 @@ const promptCache = {
 };
 
 function loadPrompt(kind) {
-  const isTrial = kind === "trial";
-  const filePath = isTrial ? TRIAL_PATH : SUPER_PATH;
-  const cache = promptCache[isTrial ? "trial" : "super"];
+  // 🔺 新規則：trial 也使用 superprompt，不再實際載入 trial-default
+  const filePath = SUPER_PATH;
+  const cache = promptCache.super;
 
   try {
     const stat = fs.statSync(filePath);
@@ -115,7 +132,7 @@ function loadPrompt(kind) {
       cache.text = fs.readFileSync(filePath, "utf8");
       cache.mtime = stat.mtimeMs;
       console.log(
-        `[System] ${isTrial ? "trial" : "super"} prompt reloaded:`,
+        `[System] super prompt reloaded:`,
         filePath,
         "| len=",
         cache.text.length,
@@ -127,14 +144,9 @@ function loadPrompt(kind) {
     if (!cache.text) {
       cache.text =
         process.env.SYS_PROMPT || "You are OnionUnion assistant (fallback).";
-      console.log(
-        `[System] ${isTrial ? "trial" : "super"} prompt missing, using fallback.`
-      );
+      console.log("[System] super prompt missing, using fallback.");
     } else {
-      console.error(
-        `[System] reload ${isTrial ? "trial" : "super"} prompt failed:`,
-        err.message || err
-      );
+      console.error("[System] reload super prompt failed:", err.message || err);
     }
   }
   return cache.text;
@@ -178,156 +190,14 @@ function buildPrompt(req) {
   return { content, tail };
 }
 
+// ---------- Gemini model picker ----------
 function pickModel(b) {
+  const fromBody = (b?._admin?.model || b?.model || "").trim();
+  if (fromBody) return fromBody;
   return (
-    b?._admin?.model ||
-    b?.model ||
-    process.env.OPENAI_MODEL ||
-    "gpt-5.1"
-  ).trim();
-}
-
-// ---------- 判斷是不是像 rs_xxx 的技術 ID ----------
-function isProbablyIdString(s) {
-  if (!s) return false;
-  if (typeof s !== "string") return false;
-  const str = s.trim();
-  if (!str) return false;
-
-  // 典型 run-step / response ID：以 rs_ 開頭 + 一長串 hex
-  if (/^rs_[0-9a-f]{16,}$/i.test(str)) return true;
-
-  // 很長、幾乎全是 [0-9a-z_-]，沒有空白，也很可疑
-  if (
-    str.length >= 24 &&
-    /^[0-9a-zA-Z\-_]+$/.test(str) &&
-    !/\s/.test(str)
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-// ---------- 專門解析 Responses API 的輸出 ----------
-function extractTextFromResponses(resp) {
-  if (!resp) return "";
-
-  const collected = [];
-
-  // 1) 官方建議：output_text[*].content[*].text.value
-  if (Array.isArray(resp.output_text)) {
-    for (const block of resp.output_text) {
-      if (!block || !Array.isArray(block.content)) continue;
-      for (const part of block.content) {
-        if (!part) continue;
-        if (part.type === "output_text" && part.text) {
-          const t = part.text;
-          if (typeof t === "string") {
-            const s = t.trim();
-            if (s) collected.push(s);
-          } else if (typeof t.value === "string") {
-            const s = t.value.trim();
-            if (s) collected.push(s);
-          }
-        }
-      }
-    }
-  }
-
-  // 2) 備援：output[*].content[*].text.value
-  if (!collected.length && Array.isArray(resp.output)) {
-    for (const item of resp.output) {
-      if (!item || !Array.isArray(item.content)) continue;
-      for (const part of item.content) {
-        if (!part) continue;
-        if (part.type === "output_text" && part.text) {
-          const t = part.text;
-          if (typeof t === "string") {
-            const s = t.trim();
-            if (s) collected.push(s);
-          } else if (typeof t.value === "string") {
-            const s = t.value.trim();
-            if (s) collected.push(s);
-          }
-        }
-      }
-    }
-  }
-
-  // 3) 最後保險：把 resp.output_text || resp.output || resp 整個掃一遍
-  if (!collected.length) {
-    let data = resp.output_text || resp.output || resp;
-    try {
-      data = JSON.parse(JSON.stringify(data));
-    } catch (e) {
-      console.error("[extractText] JSON clone error:", e);
-    }
-
-    const tmp = [];
-    function walk(node) {
-      if (node == null) return;
-      if (typeof node === "string") {
-        const s = node.trim();
-        if (s.length >= 3) tmp.push(s);
-        return;
-      }
-      if (Array.isArray(node)) {
-        for (const v of node) walk(v);
-        return;
-      }
-      if (typeof node === "object") {
-        for (const v of Object.values(node)) walk(v);
-      }
-    }
-
-    try {
-      walk(data);
-    } catch (e) {
-      console.error("[extractText] walk error:", e);
-    }
-
-    collected.push(...tmp);
-  }
-
-  if (!collected.length) return "";
-
-  // 先去掉看起來像 ID 的字串
-  const filtered = [];
-  const seenRaw = new Set();
-  for (const raw of collected) {
-    const s = String(raw).trim();
-    if (!s || seenRaw.has(s)) continue;
-    seenRaw.add(s);
-    if (isProbablyIdString(s)) continue; // 忽略 rs_xxx 之類
-    filtered.push(s);
-  }
-
-  if (!filtered.length) {
-    // 如果全部像 ID，只好退回原始 collected
-    filtered.push(...seenRaw);
-  }
-
-  // 再次去重 + 分級：優先含非 ASCII（阿拉伯＋中文）
-  const seen = new Set();
-  const primary = [];
-  const fallback = [];
-  for (const raw of filtered) {
-    const s = String(raw).trim();
-    if (!s || seen.has(s)) continue;
-    seen.add(s);
-    if (/[^\x00-\x7F]/.test(s) && s.length >= 10) {
-      primary.push(s);
-    } else if (s.length >= 10) {
-      fallback.push(s);
-    }
-  }
-
-  if (primary.length) return primary.join("\n\n");
-  if (fallback.length) return fallback.join("\n\n");
-
-  // 都太短就全部串起來
-  return Array.from(seen).join("\n\n");
+    process.env.GEMINI_MODEL_SUPER ||
+    "gemini-3-pro-preview" // 官方 model code
+  );
 }
 
 // ---------- /ask 非流式 ----------
@@ -356,37 +226,65 @@ router.post("/", async (req, res) => {
     }
 
     const isTrial = user.status === "trial";
-    const systemPrompt = loadPrompt(isTrial ? "trial" : "super");
+
+    // 🔺 trial & active 都使用 superprompt
+    const systemPrompt = loadPrompt("super");
     const model = pickModel(req.body || {});
+
+    // Trial / Active 完全同規格，不再分 token 上限
     const maxTokens =
       Number(
-        (req.body?._admin?.max_output_tokens) ??
-          (isTrial
-            ? process.env.TRIAL_MAX_TOKENS
-            : process.env.MAX_TOKENS)
-      ) || (isTrial ? 2048 : 8000);
+        (req.body?._admin?.max_output_tokens) ?? process.env.MAX_TOKENS
+      ) || 8000;
 
-    const params = {
+    // --- 呼叫 Gemini 3 Pro ---
+    const reqConfig = {
       model,
-      input: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt.content },
-      ],
-      max_output_tokens: maxTokens,
+      contents: prompt.content, // 使用者輸入（含姓名/生日/母名/問題）
+      config: {
+        systemInstruction: systemPrompt, // superprompt 當系統指令
+        maxOutputTokens: maxTokens,
+        temperature: 0.7,
+      },
     };
 
-    const resp = await client.responses.create(params);
-    const usedModel = resp.model || model;
+    let resp;
+    try {
+      resp = await ai.models.generateContent(reqConfig);
+    } catch (err) {
+      const msg = String(err?.message || err);
+      console.error("[ask] Gemini generateContent error:", msg);
+      if (msg.includes("429")) {
+        return res.status(200).json({
+          ok: false,
+          error: "quota_exceeded",
+          answer:
+            "⚠️ 系統忙碌：請通知管理員維護，目前線路壅塞。請截圖保障您的付費權益。",
+          detail: msg,
+        });
+      }
+      return res.status(500).json({
+        ok: false,
+        error: "llm_error",
+        detail: msg,
+      });
+    }
+
+    const usedModel = model;
+    const usage = resp.usageMetadata || null; // token 使用量（如果 SDK 有提供）
 
     // ===== DEBUG 模式：直接回傳 raw responses 方便排錯 =====
     if (req.body && req.body._debug_raw) {
       try {
         console.log(
-          "[DEBUG] /ask raw responses:",
+          "[DEBUG] /ask raw Gemini response:",
           JSON.stringify(resp, null, 2).slice(0, 4000)
         );
       } catch (e) {
-        console.log("[DEBUG] /ask raw responses (toJSON failed)", String(e));
+        console.log(
+          "[DEBUG] /ask raw Gemini response (toJSON failed)",
+          String(e)
+        );
       }
 
       return res.json({
@@ -398,36 +296,51 @@ router.post("/", async (req, res) => {
     }
     // ===== END DEBUG =====
 
-    let answer = extractTextFromResponses(resp).trim();
+    let answer = (resp.text || "").trim(); // 官方 SDK 會聚合到 text
     if (!answer) {
-      const dump = JSON.stringify(
-        resp.output_text || resp.output || resp,
-        null,
-        2
-      ).slice(0, 1200);
+      const dump = JSON.stringify(resp, null, 2).slice(0, 1200);
       answer =
-        "（解析回覆時發生問題，下列為系統原始輸出片段，供開發者除錯）\n\n" +
+        "（解析 Gemini 回覆時發生問題，下列為原始輸出片段，供開發者除錯）\n\n" +
         dump;
     }
 
     if (prompt.tail) answer += `\n\n${prompt.tail}`;
 
+    // ---------- Trial 優惠次數統計 & 計價層級 ----------
+    let billing = {
+      tier: "active",
+    };
+
     if (isTrial) {
-      const quota = getTrialQuota(user);
-      const nextUsed = Math.min(quota.used + 1, quota.limit);
+      const quotaBefore = getTrialQuota(user); // 使用前的狀態
+      const nextUsed = quotaBefore.used + 1;
+
       try {
         await User.updateOne(
           { _id: user._id },
           {
             $set: {
-              trial_ask_limit: quota.limit,
+              trial_ask_limit: quotaBefore.limit,
               trial_ask_used: nextUsed,
             },
           }
         );
       } catch (err) {
-        console.error("[ask] update trial quota error:", err);
+        console.error("[ask] update trial usage error:", err);
       }
+
+      billing = {
+        tier: quotaBefore.tier, // trial_discount / trial_full
+        trial: {
+          limit: quotaBefore.limit,
+          used: nextUsed,
+          remaining: Math.max(0, quotaBefore.limit - nextUsed),
+        },
+      };
+    } else if (user.status === "active" || user.status === "member") {
+      billing = {
+        tier: "active",
+      };
     }
 
     return res.json({
@@ -436,9 +349,11 @@ router.post("/", async (req, res) => {
       status: user.status,
       elapsed_ms: Date.now() - t0,
       answer,
-      sys_kind: isTrial ? "trial" : "super",
+      sys_kind: "super", // 無論 trial/active 都是 superprompt
       sys_hash: sha1(systemPrompt),
       sys_len: systemPrompt.length,
+      billing,
+      usage,
     });
   } catch (err) {
     const msg = String(err?.message || err);
@@ -460,147 +375,14 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ---------- /ask/stream（暫時保留 Responses 流式） ----------
+// ---------- /ask/stream ----------
+// 目前尚未實作 Gemini 流式輸出，暫時回 501，請前端改用非流式 /ask。
 router.post("/stream", async (req, res) => {
-  const t0 = Date.now();
-  function write(event, data) {
-    res.write(`event: ${event}\n`);
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-  }
-
-  try {
-    const user = await getUserFromReq(req);
-    const gate = ensureAskAllowed(user);
-    if (!gate.ok) {
-      write("final", {
-        ok: false,
-        code: gate.code,
-        message: gate.message,
-        ...(gate.trial ? { trial: gate.trial } : {}),
-      });
-      return res.end();
-    }
-    req.user = user;
-
-    const prompt = buildPrompt(req);
-    if (prompt.err) {
-      write("final", {
-        ok: false,
-        error: "missing_field",
-        message: prompt.err,
-      });
-      return res.end();
-    }
-
-    const isTrial = user.status === "trial";
-    const systemPrompt = loadPrompt(isTrial ? "trial" : "super");
-    const model = pickModel(req.body || {});
-    const maxTokens =
-      Number(
-        (req.body?._admin?.max_output_tokens) ??
-          (isTrial
-            ? process.env.TRIAL_MAX_TOKENS
-            : process.env.MAX_TOKENS)
-      ) || (isTrial ? 2048 : 8000);
-
-    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("Connection", "keep-alive");
-
-    const heartbeat = setInterval(() => {
-      write("heartbeat", { ts: Date.now() });
-    }, 15000);
-
-    const params = {
-      model,
-      input: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt.content },
-      ],
-      max_output_tokens: maxTokens,
-    };
-
-    const stream = await client.responses.stream(params);
-    let full = "";
-
-    for await (const event of stream) {
-      if (event.type === "response.output_text.delta") {
-        const delta = event.delta || "";
-        if (delta) {
-          full += delta;
-          write("delta", { delta });
-        }
-      } else if (event.type === "response.error") {
-        write("final", {
-          ok: false,
-          error: "server_error",
-          detail: event.error?.message || "responses stream error",
-          answer: "",
-        });
-        clearInterval(heartbeat);
-        return res.end();
-      }
-    }
-
-    let answerText = full.trim();
-    if (!answerText) {
-      answerText =
-        "（流式輸出為空，請稍後重試或通知管理員除錯。）";
-    }
-    if (prompt.tail) answerText += `\n\n${prompt.tail}`;
-
-    if (isTrial) {
-      const quota = getTrialQuota(user);
-      const nextUsed = Math.min(quota.used + 1, quota.limit);
-      try {
-        await User.updateOne(
-          { _id: user._id },
-          {
-            $set: {
-              trial_ask_limit: quota.limit,
-              trial_ask_used: nextUsed,
-            },
-          }
-        );
-      } catch (err) {
-        console.error("[ask/stream] update trial quota error:", err);
-      }
-    }
-
-    write("final", {
-      ok: true,
-      used_model: model,
-      status: user.status,
-      elapsed_ms: Date.now() - t0,
-      answer: answerText,
-      sys_kind: isTrial ? "trial" : "super",
-      sys_hash: sha1(systemPrompt),
-      sys_len: systemPrompt.length,
-    });
-
-    clearInterval(heartbeat);
-    return res.end();
-  } catch (err) {
-    const msg = String(err?.message || err);
-    console.error("[ask/stream] error:", msg);
-    if (msg.includes("429")) {
-      write("final", {
-        ok: false,
-        error: "quota_exceeded",
-        answer:
-          "⚠️ 系統忙碌：請通知管理員維護，目前線路壅塞。",
-        detail: msg,
-      });
-      return res.end();
-    }
-    write("final", {
-      ok: false,
-      error: "server_error",
-      detail: msg,
-      answer: "",
-    });
-    return res.end();
-  }
+  return res.status(501).json({
+    ok: false,
+    error: "stream_not_implemented",
+    message: "暫未開放流式輸出，請改用一般 /ask。",
+  });
 });
 
 async function getUserFromReq(req) {
